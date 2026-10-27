@@ -46,7 +46,8 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Uji klik di browser (Playwright, lebar HP 390px): login salah/benar, QR asli tampil, upload Excel, cari nama & nomor, hapus, buat promo, NYALAKAN, MATIKAN, konflik versi (pesan jelas), validasi pengaturan, PC mati terdeteksi, keluar
 - [x] Kontras WCAG AA semua teks, tombol ≥ 44px, keyboard + fokus terlihat, tanpa scroll samping
 - [ ] ⏳ Arah desain (`DESIGN.md`: warna/brand/logo). Sekarang berstatus "draft tanpa arah desain"
-- [ ] ⏳ Pilih hosting (Vercel Hobby / Netlify / Cloudflare Pages) lalu deploy
+- [x] Repo publik https://github.com/dowatech89/wa-blast (tanpa `.agents/`, kunci, dan binary)
+- [ ] Deploy dashboard ke Vercel dari repo GitHub
 
 ## Phase 4 — Bungkus jadi `WABlast.exe`
 - [x] `build.bat` → PyInstaller one-file, GOWA di dalamnya, tanpa jendela konsol (39 MB)
