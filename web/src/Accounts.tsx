@@ -34,29 +34,19 @@ function Feedback({ message }: { message: Message }) {
   );
 }
 
-export function MyPassword() {
+// New password typed twice with a show toggle, so a typo never locks a captain out.
+function usePasswordPair(label: string) {
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState<Message>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    const { error } = await db.auth.updateUser({ password });
-    setBusy(false);
-    setMessage(
-      error ? { ok: false, text: "Gagal mengganti kata sandi. Coba lagi." } : { ok: true, text: "Kata sandi diganti." },
-    );
-    if (!error) setPassword("");
-  }
-
-  return (
-    <form onSubmit={submit} className="card stack">
-      <h2>Kata sandi saya</h2>
+  const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const type = show ? "text" : "password";
+  const mismatch = confirm !== "" && confirm !== password;
+  const fields = (
+    <>
       <label>
-        Kata sandi baru
+        {label}
         <input
-          type="password"
+          type={type}
           autoComplete="new-password"
           minLength={MIN_PASSWORD}
           required
@@ -64,9 +54,58 @@ export function MyPassword() {
           onChange={(e) => setPassword(e.target.value)}
         />
       </label>
+      <label>
+        Ulangi kata sandi
+        <input
+          type={type}
+          autoComplete="new-password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+        />
+      </label>
+      <label className="check">
+        <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} />
+        Tampilkan kata sandi
+      </label>
+      {mismatch && <p className="warn">Kedua kata sandi belum sama.</p>}
+    </>
+  );
+  return {
+    password,
+    fields,
+    ready: password.length >= MIN_PASSWORD && password === confirm,
+    reset: () => {
+      setPassword("");
+      setConfirm("");
+      setShow(false);
+    },
+  };
+}
+
+export function MyPassword() {
+  const pair = usePasswordPair("Kata sandi baru");
+  const [message, setMessage] = useState<Message>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await db.auth.updateUser({ password: pair.password });
+    setBusy(false);
+    setMessage(
+      error ? { ok: false, text: "Gagal mengganti kata sandi. Coba lagi." } : { ok: true, text: "Kata sandi diganti." },
+    );
+    if (!error) pair.reset();
+  }
+
+  return (
+    <form onSubmit={submit} className="card stack">
+      <h2>Kata sandi saya</h2>
+      {pair.fields}
       <p className="hint">Minimal {MIN_PASSWORD} karakter. Jangan pakai nama outlet atau angka berurutan.</p>
       <Feedback message={message} />
-      <button type="submit" className="secondary" disabled={busy}>
+      <button type="submit" className="secondary" disabled={busy || !pair.ready}>
         {busy ? "Menyimpan..." : "Ganti kata sandi"}
       </button>
     </form>
@@ -75,18 +114,18 @@ export function MyPassword() {
 
 function SetPassword({ account }: { account: Account }) {
   const [open, setOpen] = useState(false);
-  const [password, setPassword] = useState("");
+  const pair = usePasswordPair(`Kata sandi baru untuk ${account.username}`);
   const [message, setMessage] = useState<Message>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await callAdmin({ action: "set_password", user_id: account.user_id, password });
+    const { error } = await callAdmin({ action: "set_password", user_id: account.user_id, password: pair.password });
     setBusy(false);
     setMessage(error ? { ok: false, text: error } : { ok: true, text: `Kata sandi ${account.username} diganti.` });
     if (!error) {
-      setPassword("");
+      pair.reset();
       setOpen(false);
     }
   }
@@ -102,20 +141,10 @@ function SetPassword({ account }: { account: Account }) {
     );
   return (
     <form onSubmit={submit} className="stack-sm">
-      <label>
-        Kata sandi baru untuk {account.username}
-        <input
-          type="password"
-          autoComplete="new-password"
-          minLength={MIN_PASSWORD}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
+      {pair.fields}
       <Feedback message={message} />
       <div className="row">
-        <button type="submit" className="primary" disabled={busy}>
+        <button type="submit" className="primary" disabled={busy || !pair.ready}>
           {busy ? "Menyimpan..." : "Simpan"}
         </button>
         <button type="button" className="secondary" onClick={() => setOpen(false)}>
@@ -127,8 +156,9 @@ function SetPassword({ account }: { account: Account }) {
 }
 
 function NewAccount({ kind, onCreated }: { kind: "outlet" | "supervisor"; onCreated: () => void }) {
-  const empty = { name: "", username: "", password: "" };
+  const empty = { name: "", username: "" };
   const [form, setForm] = useState(empty);
+  const pair = usePasswordPair("Kata sandi");
   const [message, setMessage] = useState<Message>(null);
   const [busy, setBusy] = useState(false);
 
@@ -138,13 +168,14 @@ function NewAccount({ kind, onCreated }: { kind: "outlet" | "supervisor"; onCrea
     const username = form.username.trim().toLowerCase();
     const { error } = await callAdmin(
       kind === "outlet"
-        ? { action: "create_outlet", name: form.name.trim(), username, password: form.password }
-        : { action: "create_supervisor", username, password: form.password },
+        ? { action: "create_outlet", name: form.name.trim(), username, password: pair.password }
+        : { action: "create_supervisor", username, password: pair.password },
     );
     setBusy(false);
     if (error) return setMessage({ ok: false, text: error });
     setMessage({ ok: true, text: `Akun ${username} dibuat. Login pakai nama pengguna ${username}.` });
     setForm(empty);
+    pair.reset();
     onCreated();
   }
 
@@ -169,24 +200,14 @@ function NewAccount({ kind, onCreated }: { kind: "outlet" | "supervisor"; onCrea
         />
       </label>
       <p className="hint">3-30 huruf, angka, atau tanda minus. Contoh: sunset, kemang-2.</p>
-      <label>
-        Kata sandi
-        <input
-          type="password"
-          autoComplete="new-password"
-          minLength={MIN_PASSWORD}
-          required
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
-      </label>
+      {pair.fields}
       {kind === "outlet" && (
         <p className="hint">
           Batas awal: 50 pesan per hari, jeda 30-90 detik, jam 09.00-20.00. Bisa diubah di menu Pengaturan outlet itu.
         </p>
       )}
       <Feedback message={message} />
-      <button type="submit" className="primary" disabled={busy}>
+      <button type="submit" className="primary" disabled={busy || !pair.ready}>
         {busy ? "Membuat..." : kind === "outlet" ? "Tambah outlet" : "Tambah supervisor"}
       </button>
     </form>

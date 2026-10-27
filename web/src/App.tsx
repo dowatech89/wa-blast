@@ -34,6 +34,7 @@ export function App() {
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -65,12 +66,16 @@ function Login() {
         <label>
           Kata sandi
           <input
-            type="password"
+            type={show ? "text" : "password"}
             autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+        </label>
+        <label className="check">
+          <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} />
+          Tampilkan kata sandi
         </label>
         {error && (
           <p className="error" role="alert">
