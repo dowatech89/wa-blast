@@ -1,0 +1,440 @@
+/* Draft without design direction: ENERGY 1 / RHYTHM 1 / MOTION 1.
+   Warm off-white base (restaurant setting), one green accent reserved for "send / on",
+   red reserved for "stop / delete". System font: loads instantly on low-end phones. */
+:root {
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --border: #e2dcd2;
+  --control-border: #8a8377; /* 3.75:1 on white, WCAG 1.4.11 */
+  --text: #1f1d1a;
+  --muted: #5c574f;
+  --accent: #1b6a43;
+  --accent-text: #ffffff;
+  --accent-soft: #e3f1e8;
+  --danger: #b3261e;
+  --danger-soft: #fbe9e7;
+  --warn-text: #7a4a00;
+  --warn-soft: #fff3d6;
+  --focus: #1d4ed8;
+  --radius: 10px;
+  --radius-sm: 8px;
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+h1 {
+  font-size: 1.5rem;
+}
+h2 {
+  font-size: 1.2rem;
+}
+h3 {
+  font-size: 1.05rem;
+}
+img {
+  max-width: 100%;
+}
+code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.shell,
+.login {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+.login {
+  padding-top: 15vh;
+  display: grid;
+  gap: 12px;
+}
+.page-message {
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.brand {
+  font-weight: 800;
+  font-size: 1.9rem;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+.brand.small {
+  font-size: 0.95rem;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+.stack-sm {
+  display: grid;
+  gap: 6px;
+}
+.stack-lg {
+  display: grid;
+  gap: 28px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+.hint {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.empty {
+  color: var(--muted);
+  padding: 24px 0;
+  text-align: center;
+}
+.error {
+  color: var(--danger);
+}
+.ok {
+  color: var(--accent);
+  font-weight: 600;
+}
+.warn {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* Real state indicators: PC online and WhatsApp connected. */
+.status {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.status li {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.status li::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.status .on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.status .on::before {
+  background: var(--accent);
+}
+.status .off {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.status .off::before {
+  background: var(--danger);
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px;
+  overflow-x: auto;
+  overflow-y: hidden; /* tabs pull their underline 2px down; without this a vertical scrollbar appears */
+}
+.tabs a {
+  flex: 1 0 auto;
+  text-align: center;
+  padding: 12px 8px; /* all four tabs fit a 375px phone without scrolling */
+  min-height: 48px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+}
+.tabs a[aria-current="page"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+label .muted {
+  font-weight: 400;
+}
+.row > label {
+  flex: 1 1 140px;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  min-height: 48px;
+  width: 100%;
+}
+input[type="file"] {
+  padding: 10px;
+}
+textarea {
+  resize: vertical;
+}
+.outlet-pick {
+  margin-bottom: 12px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  min-height: 48px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+button.danger {
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+}
+button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--control-border);
+  font-weight: 600;
+}
+button.link {
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  min-height: 44px;
+  padding: 8px;
+}
+button.link.danger-text {
+  color: var(--danger);
+}
+/* The one focal control per promo: big enough for a thumb, labelled with what it does. */
+button.big {
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  min-height: 60px;
+  flex: 1 1 220px;
+}
+
+.promo {
+  display: grid;
+  gap: 14px;
+}
+.promo-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.thumb {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  flex: none;
+}
+.thumb-lg {
+  max-height: 220px;
+  width: auto;
+  border-radius: var(--radius-sm);
+  justify-self: start;
+}
+.message-preview {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.badge {
+  justify-self: start;
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.badge.running {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+.badge.done {
+  margin-left: 8px;
+}
+
+.bar {
+  height: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.list li:first-child {
+  border-top: 0;
+}
+
+.qr {
+  width: min(280px, 100%);
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+  justify-self: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.steps {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar span {
+    transition: none;
+  }
+}
+
+/* Auto-pause notice: the one place the warn colour is used as a block, because sending has stopped. */
+.alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  border: 1px solid #e9c46a;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+.alert p {
+  flex: 1 1 240px;
+}
+
+/* Message preview shaped like a chat bubble so captains read it as "what the customer sees". */
+.bubble {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--accent-soft);
+  color: var(--text);
+  border-radius: var(--radius) var(--radius) var(--radius) 2px;
+  padding: 10px 12px;
+  max-width: 420px;
+}
+
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+label.check input {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  accent-color: var(--accent);
+}

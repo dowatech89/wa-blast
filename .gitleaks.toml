@@ -1,0 +1,12 @@
+# Gitleaks runs with --no-git (scans the working tree), so skip the same paths .gitignore keeps out of the repo.
+# Patterns avoid backslashes so they work for both / and \ path separators.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Untracked local files: dependencies, build output, caches, local env files"
+paths = [
+  '''(^|[^A-Za-z0-9_-])([.]venv|node_modules|dist|build|graphify-out|artifacts|[.]playwright-mcp|__pycache__)[^A-Za-z0-9_-]''',
+  '''(^|[^A-Za-z0-9_-])[.]env[.](local|development[.]local|production[.]local)$''',
+  '''tools.gowa.storages.''',
+]

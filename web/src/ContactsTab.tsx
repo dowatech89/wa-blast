@@ -1,0 +1,194 @@
+import { useCallback, useState } from "react";
+import { read, utils } from "xlsx";
+import { usePoll } from "./App";
+import { type ParseResult, parseContactRows } from "./contacts";
+import { db, type Outlet } from "./supabase";
+
+const PAGE = 50;
+const SAVE_BATCH = 500;
+
+type Row = { id: string; phone: string; name: string | null; opted_out: boolean; not_on_whatsapp: boolean };
+
+export function ContactsTab({ outlet }: { outlet: Outlet }) {
+  const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number } | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const term = search.trim();
+    let list = db
+      .from("contacts")
+      .select("id, phone, name, opted_out, not_on_whatsapp")
+      .order("created_at")
+      .limit(PAGE);
+    if (term) {
+      // Strip characters that would break the PostgREST or() syntax; only search phone when digits were typed.
+      const name = term.replaceAll(/[%,()*.]/g, "");
+      const digits = term.replace(/\D/g, "").replace(/^0/, "");
+      list = list.or(digits ? `name.ilike.%${name}%,phone.ilike.%${digits}%` : `name.ilike.%${name}%`);
+    }
+    const [all, stopped, noWa, page] = await Promise.all([
+      db.from("contacts").select("id", { count: "exact", head: true }),
+      db.from("contacts").select("id", { count: "exact", head: true }).eq("opted_out", true),
+      db.from("contacts").select("id", { count: "exact", head: true }).eq("not_on_whatsapp", true),
+      list,
+    ]);
+    if (all.error || stopped.error || noWa.error || page.error) {
+      setError("Gagal memuat kontak. Cek internet kamu.");
+      return;
+    }
+    setError(null);
+    setCounts({ total: all.count ?? 0, stopped: stopped.count ?? 0, noWa: noWa.count ?? 0 });
+    setRows(page.data as Row[]);
+  }, [search]);
+  usePoll(load, 15000);
+
+  async function remove(row: Row) {
+    if (!confirm(`Hapus ${row.name || row.phone} dari daftar kontak?`)) return;
+    const { error } = await db.from("contacts").delete().eq("id", row.id);
+    if (error) setError("Kontak gagal dihapus. Coba lagi.");
+    load();
+  }
+
+  return (
+    <div className="stack-lg">
+      <Upload outlet={outlet} onSaved={load} />
+      <section className="stack">
+        <h2>Daftar kontak</h2>
+        {counts && (
+          <p>
+            <strong>{counts.total}</strong> kontak
+            {counts.stopped > 0 && <>, {counts.stopped} sudah minta berhenti</>}
+            {counts.noWa > 0 && <>, {counts.noWa} tidak punya WhatsApp</>}
+            {counts.stopped + counts.noWa > 0 && <>. Mereka tidak akan dikirimi promo.</>}
+          </p>
+        )}
+        <label>
+          Cari nama atau nomor
+          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </label>
+        {error && <p className="error">{error}</p>}
+        {rows === null && !error && <p className="muted">Memuat kontak...</p>}
+        {rows?.length === 0 && (
+          <p className="empty">
+            {search ? "Tidak ada kontak yang cocok." : "Belum ada kontak. Upload file Excel di atas."}
+          </p>
+        )}
+        {rows && rows.length > 0 && (
+          <ul className="list">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <span>
+                  {r.name || "Tanpa nama"} <span className="muted">{r.phone}</span>
+                  {r.opted_out && <span className="badge done">Minta berhenti</span>}
+                  {r.not_on_whatsapp && <span className="badge done">Tidak punya WhatsApp</span>}
+                </span>
+                <button type="button" className="link danger-text" onClick={() => remove(r)}>
+                  Hapus
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {counts && rows && counts.total > rows.length && !search && (
+          <p className="muted">
+            Menampilkan {rows.length} kontak pertama. Pakai kolom cari untuk menemukan kontak lain.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
+  const [parsed, setParsed] = useState<ParseResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+  const [inputKey, setInputKey] = useState(0);
+
+  async function pick(file: File | undefined) {
+    setParsed(null);
+    setError(null);
+    setDone(null);
+    if (!file) return;
+    try {
+      const book = read(await file.arrayBuffer());
+      const sheet = book.Sheets[book.SheetNames[0]];
+      setParsed(parseContactRows(utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true })));
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message.startsWith("Kolom")
+          ? e.message
+          : "File tidak bisa dibaca. Pakai file Excel (.xlsx, .xls) atau .csv.",
+      );
+    }
+  }
+
+  async function save() {
+    if (!parsed) return;
+    setBusy(true);
+    setError(null);
+    const rows = parsed.contacts.map((c) => ({ ...c, outlet_id: outlet.id }));
+    for (let i = 0; i < rows.length; i += SAVE_BATCH) {
+      const { error } = await db
+        .from("contacts")
+        .upsert(rows.slice(i, i + SAVE_BATCH), { onConflict: "outlet_id,phone", ignoreDuplicates: true });
+      if (error) {
+        setBusy(false);
+        setError(`Gagal menyimpan setelah ${i} kontak. Coba upload lagi, kontak yang sudah masuk tidak akan dobel.`);
+        onSaved();
+        return;
+      }
+    }
+    setBusy(false);
+    setDone(`${rows.length} kontak sudah diproses. Nomor yang sudah ada sebelumnya tidak dibuat dobel.`);
+    setParsed(null);
+    setInputKey((k) => k + 1);
+    onSaved();
+  }
+
+  return (
+    <section className="card stack">
+      <h2>Tambah kontak dari Excel</h2>
+      <p className="hint">
+        Baris pertama harus judul kolom. Wajib ada kolom nomor (misalnya <q>Nomor</q> atau <q>No HP</q>), kolom{" "}
+        <q>Nama</q> boleh ada.
+      </p>
+      <label>
+        Pilih file
+        <input key={inputKey} type="file" accept=".xlsx,.xls,.csv" onChange={(e) => pick(e.target.files?.[0])} />
+      </label>
+      {parsed && (
+        <div className="stack-sm">
+          <p>
+            <strong>{parsed.contacts.length}</strong> nomor siap disimpan.
+          </p>
+          {parsed.duplicates > 0 && <p className="muted">{parsed.duplicates} nomor dobel di file dilewati.</p>}
+          {parsed.invalid.length > 0 && (
+            <p className="warn">
+              {parsed.invalid.length} nomor salah dan tidak disimpan (baris{" "}
+              {parsed.invalid
+                .slice(0, 10)
+                .map((x) => x.row)
+                .join(", ")}
+              {parsed.invalid.length > 10 && ", dan lainnya"}).
+            </p>
+          )}
+          {parsed.contacts.length > 0 && (
+            <button type="button" className="primary" onClick={save} disabled={busy}>
+              {busy ? "Menyimpan..." : `Simpan ${parsed.contacts.length} kontak`}
+            </button>
+          )}
+        </div>
+      )}
+      {done && <p className="ok">{done}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
