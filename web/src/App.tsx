@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { AdminTab, MyPassword } from "./Accounts";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
 import { toEmail } from "./login";
@@ -89,6 +90,7 @@ const TABS = [
   { id: "kontak", label: "Kontak" },
   { id: "wa", label: "WhatsApp" },
   { id: "atur", label: "Pengaturan" },
+  { id: "admin", label: "Admin" }, // supervisors only
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -102,6 +104,11 @@ function Dashboard() {
   const [outletId, setOutletId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>(currentTab);
+  const [isSupervisor, setIsSupervisor] = useState(false);
+
+  useEffect(() => {
+    db.rpc("is_supervisor").then(({ data }) => setIsSupervisor(data === true));
+  }, []);
 
   useEffect(() => {
     const onHash = () => setTab(currentTab());
@@ -122,11 +129,28 @@ function Dashboard() {
   usePoll(load);
 
   const outlet = outlets.find((o) => o.id === outletId) ?? outlets[0];
+  const signOut = (
+    <button type="button" className="link" onClick={() => db.auth.signOut()}>
+      Keluar
+    </button>
+  );
+  // A supervisor with no outlet yet still needs the Admin menu to create the first one.
+  if (!outlet && isSupervisor)
+    return (
+      <div className="shell">
+        <header className="top">
+          <h1>Admin</h1>
+          {signOut}
+        </header>
+        <AdminTab onChanged={load} />
+      </div>
+    );
   if (error && !outlet) return <p className="page-message error">{error}</p>;
   if (!outlet) return <p className="page-message">Memuat...</p>;
 
   const pcOn = isPcOnline(outlet);
   const waOn = outlet.wa_status === "connected";
+  const shown = tab === "admin" && !isSupervisor ? "promo" : tab;
 
   return (
     <div className="shell">
@@ -135,9 +159,7 @@ function Dashboard() {
           <p className="brand small">WA Blast</p>
           <h1>{outlet.name}</h1>
         </div>
-        <button type="button" className="link" onClick={() => db.auth.signOut()}>
-          Keluar
-        </button>
+        {signOut}
       </header>
 
       {outlets.length > 1 && (
@@ -175,8 +197,8 @@ function Dashboard() {
       )}
 
       <nav className="tabs" aria-label="Menu">
-        {TABS.map((t) => (
-          <a key={t.id} href={`#${t.id}`} aria-current={tab === t.id ? "page" : undefined}>
+        {TABS.filter((t) => t.id !== "admin" || isSupervisor).map((t) => (
+          <a key={t.id} href={`#${t.id}`} aria-current={shown === t.id ? "page" : undefined}>
             {t.label}
           </a>
         ))}
@@ -184,10 +206,16 @@ function Dashboard() {
 
       {/* key resets each tab's form state when a supervisor switches outlet */}
       <main key={outlet.id}>
-        {tab === "promo" && <PromoTab outlet={outlet} />}
-        {tab === "kontak" && <ContactsTab outlet={outlet} />}
-        {tab === "wa" && <ConnectTab outlet={outlet} />}
-        {tab === "atur" && <SettingsTab outlet={outlet} onSaved={load} />}
+        {shown === "promo" && <PromoTab outlet={outlet} />}
+        {shown === "kontak" && <ContactsTab outlet={outlet} />}
+        {shown === "wa" && <ConnectTab outlet={outlet} />}
+        {shown === "atur" && (
+          <div className="stack-lg">
+            <SettingsTab outlet={outlet} onSaved={load} />
+            <MyPassword />
+          </div>
+        )}
+        {shown === "admin" && <AdminTab onChanged={load} />}
       </main>
     </div>
   );

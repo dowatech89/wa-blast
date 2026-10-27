@@ -63,6 +63,13 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Panduan akun + ganti kata sandi di `docs/guides/pengaturan-backend.md`
 - [x] Build ulang `WABlast.exe` (login username); `agent/dist/wablast.env` sudah berisi URL + publishable key online
 
+## Phase 4d — Menu Admin (tanpa buka Supabase)
+- [x] Edge Function `admin`: tambah outlet + akun, tambah supervisor, ganti kata sandi (hanya supervisor)
+- [x] Dashboard: menu **Admin** untuk supervisor, **Kata sandi saya** di Pengaturan untuk semua akun
+- [x] Migration `20261027040000_admin.sql` (`is_supervisor()`); `20261027030000_durable_opt_outs.sql` (STOP tidak bisa hilang)
+- [x] Test: agent 29 (6 test fungsi admin), web 19; uji klik lokal: buat outlet, ganti kata sandi, captain tidak lihat Admin
+- [x] Dipasang online: migration + fungsi; cek online: tamu 401, captain 403, supervisor bisa
+
 ## Phase 4b — Pengaman Risiko Blokir (bisa diatur per outlet di dashboard dan backend)
 - [x] Migration `supabase/migrations/20261027010000_risk_controls.sql` (kolom pengaturan di `outlets`, default aman)
 - [x] Pemanasan nomor baru: batas harian naik tiap hari sejak nomor tersambung (`effective_daily_limit`, `mark_number_linked`)

@@ -189,8 +189,7 @@ code {
   display: flex;
   border-bottom: 2px solid var(--border);
   margin-bottom: 20px;
-  overflow-x: auto;
-  overflow-y: hidden; /* tabs pull their underline 2px down; without this a vertical scrollbar appears */
+  flex-wrap: wrap; /* a supervisor's fifth tab (Admin) drops to a second row on phones instead of hiding */
 }
 .tabs a {
   flex: 1 0 auto;

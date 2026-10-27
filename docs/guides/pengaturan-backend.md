@@ -38,7 +38,19 @@ Captain login cukup pakai **nama pengguna** (misalnya `sunset`). Dashboard dan `
 - **Akun outlet**: satu akun untuk satu outlet. Hanya bisa melihat outletnya sendiri. Akun inilah yang diisi di `WABlast.exe` di PC outlet.
 - **Akun supervisor**: bisa melihat dan mengatur semua outlet dari dashboard. Ada pilihan outlet di bagian atas. Akun ini tidak dipakai di `WABlast.exe`, dan tidak bisa mengirim pesan sendiri.
 
-Pendaftaran umum dimatikan, jadi akun hanya bisa dibuat oleh admin.
+Pendaftaran umum dimatikan, jadi akun hanya bisa dibuat oleh supervisor.
+
+**Cara biasa, lewat dashboard** (login sebagai supervisor):
+- Menu **Admin**: tambah outlet beserta akunnya, tambah supervisor, dan **Ganti kata sandi** akun mana pun.
+- Menu **Pengaturan**, bagian **Kata sandi saya**: setiap akun bisa mengganti kata sandinya sendiri.
+- Outlet baru mulai dengan 50 pesan per hari, jeda 30-90 detik, jam 09.00-20.00 WIB. Ubah lewat menu Pengaturan outlet itu.
+
+Menu Admin memakai Edge Function `admin` di Supabase (`supabase/functions/admin`). Kunci service-role hanya ada di server Supabase. Kalau fungsinya diubah, pasang ulang dengan:
+```
+npx supabase functions deploy admin --project-ref <project-ref> --use-api --no-verify-jwt
+```
+
+**Cara cadangan, lewat Supabase** (kalau dashboard tidak bisa dibuka):
 
 Buat akun outlet baru:
 1. Supabase, menu **Authentication**, **Users**, **Add user**, **Create new user**. Email `<nama>@wablast.local`, isi kata sandi, centang **Auto Confirm User**.
