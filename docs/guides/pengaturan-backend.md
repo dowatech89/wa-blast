@@ -83,6 +83,12 @@ select name, daily_limit, public.effective_daily_limit(o) as batas_hari_ini, wa_
   from outlets o order by name;
 ```
 
+Pelanggan yang membalas STOP tercatat di tabel `opt_outs`, bukan hanya di kontaknya. Kalau kontaknya dihapus lalu di-upload lagi, nomornya tetap tidak dikirimi. Dashboard tidak bisa mengubah status ini. Kalau pelanggan sendiri minta berlangganan lagi:
+```sql
+delete from opt_outs where phone = '6281234567890';
+update contacts set opted_out = false where phone = '6281234567890';
+```
+
 Kontak yang ternyata punya WhatsApp (misalnya salah deteksi) dan mau dikirimi lagi:
 ```sql
 update contacts set not_on_whatsapp = false where phone = '6281234567890';

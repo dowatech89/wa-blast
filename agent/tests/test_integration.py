@@ -359,3 +359,21 @@ def test_supervisor_sees_every_outlet_captain_only_own(stack, admin, outlet, db)
         sup_db.rpc("claim_next_message", {"p_outlet_id": outlet["id"]}).execute()
     with pytest.raises(APIError, match="permission denied"):
         sup_db.table("supervisors").insert({"user_id": sup.id}).execute()
+
+
+def test_opt_out_survives_delete_reimport_and_direct_edits(db, outlet):
+    phone, stranger = (f"62813{uuid.uuid4().int % 10**8:08d}" for _ in range(2))
+    contact = {"outlet_id": outlet["id"], "phone": phone, "name": "Rina"}
+    db.table("contacts").insert(contact).execute()
+    db.rpc("opt_out_contact", {"p_outlet_id": outlet["id"], "p_phone": phone}).execute()
+    db.rpc("opt_out_contact", {"p_outlet_id": outlet["id"], "p_phone": stranger}).execute()  # STOP before import
+
+    with pytest.raises(APIError, match="permission denied"):
+        db.table("contacts").update({"opted_out": False}).eq("phone", phone).execute()
+    db.table("contacts").update({"name": "Rina S"}).eq("phone", phone).execute()  # renaming stays allowed
+
+    db.table("contacts").delete().eq("phone", phone).execute()
+    db.table("contacts").insert([contact, {**contact, "phone": stranger, "opted_out": False}]).execute()
+    rows = db.table("contacts").select("phone,opted_out").in_("phone", [phone, stranger]).execute().data
+    assert all(r["opted_out"] for r in rows) and len(rows) == 2
+    db.table("contacts").delete().in_("phone", [phone, stranger]).execute()
