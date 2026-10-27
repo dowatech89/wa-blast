@@ -1,5 +1,6 @@
 """WABlast.exe entry point: log in, start GOWA, then send queued messages until the PC shuts down."""
 
+import contextlib
 import logging
 import sys
 import threading
@@ -28,7 +29,7 @@ def gowa_exe() -> Path:
 
 
 def set_autostart(enabled: bool) -> None:
-    """Start WABlast.exe at Windows logon (current user only). Run once at install: `WABlast.exe --autostart`."""
+    """Start WABlast.exe at Windows logon (current user only). Asked after the first login, or `--autostart`."""
     import winreg
 
     key = r"Software\Microsoft\Windows\CurrentVersion\Run"
@@ -36,7 +37,8 @@ def set_autostart(enabled: bool) -> None:
         if enabled:
             winreg.SetValueEx(k, "WABlast", 0, winreg.REG_SZ, f'"{sys.executable}"')
         else:
-            winreg.DeleteValue(k, "WABlast")
+            with contextlib.suppress(FileNotFoundError):  # never enabled on this PC
+                winreg.DeleteValue(k, "WABlast")
 
 
 def wait_until_ready(gowa: Gowa) -> None:
@@ -62,7 +64,12 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s", handlers=handlers)
     logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per request every tick drowns real events
     settings = Settings()  # type: ignore[call-arg]  # values come from env files
-    db = session.connect(settings.supabase_url, settings.supabase_anon_key, data_dir() / "session.json")
+    session_file = data_dir() / "session.json"
+    first_login = not session_file.exists()
+    db = session.connect(settings.supabase_url, settings.supabase_anon_key, session_file)
+    # Explicit opt-in on this PC; --autostart / --no-autostart still work for scripted installs.
+    if first_login and getattr(sys, "frozen", False) and not {"--autostart", "--no-autostart"} & set(sys.argv):
+        set_autostart(session.ask_autostart())
     user = db.auth.get_session().user  # type: ignore[union-attr]  # connect() guarantees a session
     # Filter by owner: a supervisor account sees every outlet but must not run as one.
     outlet = cast(dict[str, Any], db.table("outlets").select("*").eq("owner_user_id", user.id).single().execute().data)

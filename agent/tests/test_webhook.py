@@ -61,3 +61,14 @@ def test_username_maps_to_account_email():
 
     assert to_email(" Sunset ") == "sunset@wablast.local"
     assert to_email("captain@test.local") == "captain@test.local"
+
+
+def test_frozen_exe_reads_bundled_config_then_lets_a_file_next_to_it_override(monkeypatch, tmp_path):
+    import sys
+
+    from wablast import config
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path / "bundle"), raising=False)
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "install" / "WABlast.exe"))
+    assert config._env_files() == (tmp_path / "bundle" / "wablast.env", tmp_path / "install" / "wablast.env")

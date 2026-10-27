@@ -21,9 +21,10 @@ def data_dir() -> Path:
 
 
 def _env_files() -> tuple[Path, ...]:
-    # Shipped next to the exe as wablast.env; .env.local at the repo root during development.
+    # Later files win. The exe carries wablast.env inside (URL + publishable key are public), so outlets get one file;
+    # a wablast.env next to the exe still overrides it. During development: .env.local at the repo root.
     if getattr(sys, "frozen", False):
-        return (app_dir() / "wablast.env",)
+        return (Path(getattr(sys, "_MEIPASS", app_dir())) / "wablast.env", app_dir() / "wablast.env")
     return (app_dir().parent / ".env.local", app_dir() / "wablast.env")
 
 

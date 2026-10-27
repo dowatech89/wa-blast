@@ -52,6 +52,21 @@ def ask_credentials(error: str | None) -> tuple[str, str]:
     return email.strip(), password
 
 
+def ask_autostart() -> bool:
+    """Shown once after the first login: the exe has no window, so this is also the sign that it is running."""
+    from tkinter import Tk, messagebox
+
+    root = Tk()
+    root.withdraw()
+    answer = messagebox.askyesno(
+        "WA Blast",
+        "WA Blast sudah jalan di belakang layar. Buka dashboard untuk scan kode QR.\n\n"
+        "Nyalakan WA Blast otomatis setiap PC menyala?",
+    )
+    root.destroy()
+    return answer
+
+
 def connect(url: str, anon_key: str, session_file: Path, credentials=ask_credentials) -> Client:
     client = create_client(url, anon_key, options=ClientOptions(storage=FileStorage(session_file)))
     if client.auth.get_session() is not None:

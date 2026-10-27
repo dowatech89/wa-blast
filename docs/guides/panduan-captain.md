@@ -5,6 +5,14 @@
 - Link dashboard WA Blast dan akun outlet (nama pengguna + kata sandi) dari admin.
 - PC outlet yang sudah dipasangi WA Blast oleh admin.
 
+## 0. Pasang di PC outlet (sekali saja, biasanya oleh admin)
+1. Salin `WABlast.exe` ke PC outlet, misalnya ke folder `Dokumen`. Cukup 1 file itu.
+2. Klik dua kali `WABlast.exe`. Kalau muncul **Windows protected your PC**, klik **More info**, lalu **Run anyway**.
+3. Isi nama pengguna dan kata sandi outlet.
+4. Muncul pertanyaan **Nyalakan WA Blast otomatis setiap PC menyala?** Klik **Yes**.
+
+Setelah itu WA Blast jalan di belakang layar tanpa jendela. Lanjut ke langkah 1 di HP.
+
 ## 1. Pertama kali: sambungkan WhatsApp
 1. Nyalakan PC outlet. WA Blast jalan sendiri di PC, tidak perlu dibuka.
 2. Di HP, buka link dashboard, lalu masuk pakai akun outlet.
