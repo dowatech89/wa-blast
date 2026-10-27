@@ -14,6 +14,7 @@ Promo WhatsApp (foto + teks) untuk outlet restoran. Setiap outlet memakai nomor 
 3. Exe: unduh rilis Windows dari
    [go-whatsapp-web-multidevice v9.6.0](https://github.com/aldinokemal/go-whatsapp-web-multidevice/releases/tag/v9.6.0),
    taruh `gowa.exe` di `tools/gowa/` (SHA-256 `23e7f8d22ab377174b54b11e13f2f7e6fded56f389c091971aa2976ee7173f4c`),
-   lalu jalankan `agent\build.bat`.
+   salin `agent\wablast.env.example` ke `agent\wablast.env` (isi URL + publishable key), lalu jalankan `agent\build.bat`.
+   Hasilnya 1 file `agent\dist\WABlast.exe` yang sudah berisi GOWA dan alamat Supabase.
 
 Risiko blokir WhatsApp tidak bisa nol: kirim hanya ke pelanggan yang memberikan nomornya.

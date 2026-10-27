@@ -47,11 +47,14 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Kontras WCAG AA semua teks, tombol ≥ 44px, keyboard + fokus terlihat, tanpa scroll samping
 - [ ] ⏳ Arah desain (`DESIGN.md`: warna/brand/logo). Sekarang berstatus "draft tanpa arah desain"
 - [x] Repo publik https://github.com/dowatech89/wa-blast (tanpa `.agents/`, kunci, dan binary)
-- [ ] Deploy dashboard ke Vercel dari repo GitHub
+- [x] Deploy dashboard ke Vercel dari repo GitHub: https://wa-blast-dowa1.vercel.app (Vercel Authentication dimatikan)
 
 ## Phase 4 — Bungkus jadi `WABlast.exe`
 - [x] `build.bat` → PyInstaller one-file, GOWA di dalamnya, tanpa jendela konsol (39 MB)
 - [x] Autostart Windows lewat `WABlast.exe --autostart` (sekali saat instalasi)
+- [x] Exe 1 file: GOWA + `wablast.env` di dalam exe (file `wablast.env` di sebelah exe tetap bisa menimpa)
+- [x] Setelah login pertama: kotak "sudah jalan di belakang layar" + pilihan nyala otomatis (Yes/No); memilih No tidak lagi crash
+- [x] Menu Admin (Edge Function `admin`), lihat/ulangi kata sandi; test agent 30, web 19
 - [x] Exe hasil build dijalankan ke Supabase lokal: login tersimpan, QR terbit, detak jalan, berhenti bersih tanpa proses tertinggal
 - [ ] ⏳ Tes di PC outlet: install → login → QR di web → scan → restart PC → tetap tersambung
 
