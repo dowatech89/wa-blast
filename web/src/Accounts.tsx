@@ -9,8 +9,14 @@ type Accounts = { outlets: (Account & { id: string; name: string })[]; superviso
 type Message = { ok: boolean; text: string } | null;
 
 // The `admin` Edge Function holds the service-role key; it answers in plain Indonesian on errors.
-async function callAdmin(body: Record<string, string>) {
+async function callAdmin(body: Record<string, string>, retried = false): Promise<{ data?: unknown; error?: string }> {
   const { data, error } = await db.functions.invoke("admin", { body });
+  if (error instanceof FunctionsHttpError && error.context.status === 401) {
+    // Stale access token: refresh once and retry; if the session is gone, send the user back to the login page.
+    if (!retried && !(await db.auth.refreshSession()).error) return callAdmin(body, true);
+    await db.auth.signOut();
+    return { error: "Silakan masuk lagi." };
+  }
   if (error instanceof FunctionsHttpError) {
     const detail = await error.context.json().catch(() => null);
     return { error: detail?.error ?? "Gagal. Coba lagi." };

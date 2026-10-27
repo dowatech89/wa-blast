@@ -41,8 +41,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   const jwt = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
-  const { data: caller } = await admin.auth.getUser(jwt);
-  if (!caller.user) return fail(401, "Silakan masuk lagi.");
+  const { data: caller, error: authError } = await admin.auth.getUser(jwt);
+  if (!caller.user) {
+    console.warn("admin: caller rejected", authError?.code, authError?.message); // visible in Supabase function logs
+    return fail(401, "Silakan masuk lagi.");
+  }
   const { data: sup } = await admin.from("supervisors").select("user_id").eq("user_id", caller.user.id).maybeSingle();
   if (!sup) return fail(403, "Hanya supervisor yang boleh mengatur akun.");
 
