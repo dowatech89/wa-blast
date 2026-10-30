@@ -260,16 +260,26 @@ def test_number_without_whatsapp_is_skipped_for_good(db, outlet, running_campaig
     assert len(queued) == len(phones) - 1
 
 
-def test_customer_gets_at_most_one_promo_per_window(db, admin, outlet, running_campaign):
-    camp, _ = running_campaign
-    first = db.table("messages").select("id").eq("campaign_id", camp["id"]).execute().data
-    now = datetime.now(UTC).isoformat()
-    admin.table("messages").update({"status": "sent", "sent_at": now}).in_("id", [r["id"] for r in first]).execute()
+def test_second_promo_waits_until_the_gap_has_passed(db, admin, outlet, running_campaign):
+    camp, _ = running_campaign  # outlet default: 3 calendar days between promos
+    first = [r["id"] for r in db.table("messages").select("id").eq("campaign_id", camp["id"]).execute().data]
+    admin.table("messages").update({"status": "sent", "sent_at": datetime.now(UTC).isoformat()}).in_(
+        "id", first
+    ).execute()
     camp2 = start_campaign(db, outlet)
+
+    # Postponed, not skipped: nothing to send now, but promo 2 keeps its queue and stays running.
     assert db.rpc("claim_next_message", {"p_outlet_id": outlet["id"]}).execute().data == []
-    rows = db.table("messages").select("status,error").eq("campaign_id", camp2["id"]).execute().data
-    assert {r["status"] for r in rows} == {"skipped"} and "3 hari" in rows[0]["error"]
-    assert db.table("campaigns").select("status").eq("id", camp2["id"]).single().execute().data["status"] == "done"
+    rows = db.table("messages").select("status").eq("campaign_id", camp2["id"]).execute().data
+    assert {r["status"] for r in rows} == {"queued"}
+    assert db.table("campaigns").select("status").eq("id", camp2["id"]).single().execute().data["status"] == "running"
+
+    # 2 days ago is still inside a 3-day gap; 3 days ago is not.
+    for days, expected in ((2, []), (3, [camp2["id"]])):
+        sent_at = (datetime.now(UTC) - timedelta(days=days)).isoformat()
+        admin.table("messages").update({"sent_at": sent_at}).in_("id", first).execute()
+        claimed = db.rpc("claim_next_message", {"p_outlet_id": outlet["id"]}).execute().data
+        assert [m["campaign_id"] for m in claimed] == expected
 
 
 @pytest.mark.parametrize(

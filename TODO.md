@@ -82,7 +82,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Pemanasan nomor baru: batas harian naik tiap hari sejak nomor tersambung (`effective_daily_limit`, `mark_number_linked`)
 - [x] Cek nomor punya WhatsApp sebelum kirim (GOWA `/user/check`); nomor tanpa WA dilewati selamanya
 - [x] Berhenti otomatis setelah N gagal berturut-turut, dan saat WhatsApp terputus; peringatan kuning di dashboard
-- [x] Batas 1 promo per pelanggan per N hari
+- [x] Jeda N hari kalender antar promo per pelanggan; promo berikutnya menunggu, tidak dilewati (`20261030010000_defer_promo_gap.sql`, dipasang online)
 - [x] Kalimat berhenti langganan otomatis di akhir pesan + kata STOP diatur dari database
 - [x] Tab Pengaturan: bagian "Pengaman nomor"; tab Promo: contoh pesan persis seperti yang diterima pelanggan; tab Kontak: penanda "Tidak punya WhatsApp"
 - [x] Test: agent 20 (termasuk 9 test baru ke Supabase lokal + GOWA asli), web 18; uji klik browser + lebar HP 375px

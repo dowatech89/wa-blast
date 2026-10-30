@@ -177,10 +177,13 @@ export function SettingsTab({ outlet, onSaved }: { outlet: Outlet; onSaved: () =
         </p>
 
         <label>
-          Satu pelanggan maksimal dapat 1 promo setiap (hari)
+          Jeda antar promo ke pelanggan yang sama (hari)
           <input {...num("min_days_between_promos", 0)} />
         </label>
-        <p className="hint">Isi 0 kalau pelanggan boleh menerima promo kapan saja.</p>
+        <p className="hint">
+          Isi 1: pelanggan dapat paling banyak 1 promo per hari. Kalau ada beberapa promo berjalan, promo berikutnya
+          menunggu dan terkirim di hari berikutnya. Isi 0 kalau pelanggan boleh menerima promo kapan saja.
+        </p>
 
         <label>
           Kalimat di akhir setiap promo

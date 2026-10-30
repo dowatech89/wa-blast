@@ -54,7 +54,7 @@ Ketuk **Mengerti** untuk menutup kotaknya.
 Cek tulisan di atas. **PC outlet mati** berarti PC harus dinyalakan. **WhatsApp belum tersambung** berarti scan kode QR dulu. Bisa juga karena di luar jam kirim atau batas hari ini sudah habis.
 
 **Kenapa ada pelanggan yang dilewati?**
-Ketuk **Lihat yang gagal atau dilewati** di promonya. Alasannya tertulis: minta berhenti, nomor tidak punya WhatsApp, atau baru menerima promo beberapa hari lalu.
+Ketuk **Lihat yang gagal atau dilewati** di promonya. Alasannya tertulis: minta berhenti atau nomor tidak punya WhatsApp. Pelanggan yang baru menerima promo lain tidak dilewati, hanya menunggu jeda harinya lalu dikirim otomatis.
 
 **Pelanggan membalas STOP, lalu bagaimana?**
 Tidak perlu apa-apa. Nomornya otomatis tidak dikirimi promo lagi.

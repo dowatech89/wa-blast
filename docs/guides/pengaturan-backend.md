@@ -19,7 +19,7 @@ Semua pengaturan kirim dan pengaman nomor disimpan per outlet di tabel `outlets`
 | `warmup_daily_increase` | `5` | Tambahan batas setiap hari, sampai mencapai `daily_limit`. |
 | `check_number_first` | `true` | Cek nomor punya WhatsApp sebelum kirim. Nomor tanpa WhatsApp dilewati selamanya (`contacts.not_on_whatsapp`). |
 | `pause_after_failures` | `3` | Semua promo dihentikan setelah sekian kali gagal berturut-turut. `0` = tidak pernah. |
-| `min_days_between_promos` | `3` | Satu pelanggan maksimal menerima 1 promo dalam sekian hari. `0` = tanpa batas. |
+| `min_days_between_promos` | `3` | Jeda hari kalender antar promo ke pelanggan yang sama. Promo berikutnya menunggu (tidak dilewati) sampai jeda lewat. `1` = maksimal 1 promo per hari. `0` = tanpa batas. |
 | `optout_footer` | `Balas STOP kalau tidak mau menerima promo lagi.` | Kalimat yang ditambahkan di akhir setiap promo. Kosongkan untuk mematikan. |
 | `stop_keywords` | `{STOP,BERHENTI,UNSUBSCRIBE}` | Balasan pelanggan yang membuatnya berhenti langganan. Tidak membedakan huruf besar/kecil. |
 
