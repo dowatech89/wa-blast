@@ -108,11 +108,15 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
 }
 
 const FAILED_SHOWN = 50;
+const TEMPLATE_ROWS = 2000;
 
 async function downloadTemplate() {
   const { utils, writeFile } = await import("xlsx");
   // Examples live in the header, not in a data row a captain could forget to delete and then message.
   const sheet = utils.aoa_to_sheet([["Nama (contoh: Budi)", "Nomor (contoh: 081234567890)"]]);
+  // Text-format the number column, or Excel drops the leading 0 and shows 6,28129E+12.
+  for (let r = 1; r <= TEMPLATE_ROWS; r++) sheet[utils.encode_cell({ r, c: 1 })] = { t: "s", v: "", z: "@" };
+  sheet["!ref"] = utils.encode_range({ s: { r: 0, c: 0 }, e: { r: TEMPLATE_ROWS, c: 1 } });
   sheet["!cols"] = [{ wch: 28 }, { wch: 30 }];
   const book = utils.book_new();
   utils.book_append_sheet(book, sheet, "Kontak");
