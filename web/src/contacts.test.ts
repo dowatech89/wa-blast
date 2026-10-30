@@ -33,8 +33,16 @@ describe("parseContactRows", () => {
       { phone: "6281234567890", name: "Budi" },
       { phone: "6281298765432", name: "Sari" },
     ]);
-    expect(res.invalid).toEqual([{ row: 4, value: "12345" }]);
+    expect(res.invalid).toEqual([{ row: 4, value: "12345", name: "Salah" }]);
     expect(res.duplicates).toBe(1);
+  });
+
+  it("reads the downloadable template's headers", () => {
+    const res = parseContactRows([
+      ["Nama (contoh: Budi)", "Nomor (contoh: 081234567890)"],
+      ["Sari", "0812 9876 5432"],
+    ]);
+    expect(res.contacts).toEqual([{ phone: "6281298765432", name: "Sari" }]);
   });
 
   it("accepts a sheet with only a phone column", () => {

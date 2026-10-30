@@ -41,6 +41,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Halaman Masuk
 - [x] Tab WhatsApp: status PC, status WA, QR + langkah scan, tombol Ganti nomor
 - [x] Tab Kontak: upload Excel/CSV, ringkasan masuk/salah/dobel, cari, hapus
+- [x] Tab Kontak: unduh template Excel, nomor 08/8/+62 otomatis jadi 62, daftar nomor salah (baris, nama, nomor) tetap tampil setelah simpan
 - [x] Tab Promo: foto + pesan + `{nama}`, NYALAKAN/MATIKAN, progres, daftar gagal
 - [x] Tab Pengaturan: batas harian, jeda, jam kirim
 - [x] 17 test; biome, tsc, knip bersih; build produksi 72 KB gzip

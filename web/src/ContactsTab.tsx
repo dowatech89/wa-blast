@@ -107,8 +107,21 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
   );
 }
 
+const FAILED_SHOWN = 50;
+
+async function downloadTemplate() {
+  const { utils, writeFile } = await import("xlsx");
+  // Examples live in the header, not in a data row a captain could forget to delete and then message.
+  const sheet = utils.aoa_to_sheet([["Nama (contoh: Budi)", "Nomor (contoh: 081234567890)"]]);
+  sheet["!cols"] = [{ wch: 28 }, { wch: 30 }];
+  const book = utils.book_new();
+  utils.book_append_sheet(book, sheet, "Kontak");
+  writeFile(book, "template-kontak.xlsx");
+}
+
 function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
   const [parsed, setParsed] = useState<ParseResult | null>(null);
+  const [failed, setFailed] = useState<ParseResult["invalid"]>([]); // stays after saving so the captain can fix them
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -116,6 +129,7 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
 
   async function pick(file: File | undefined) {
     setParsed(null);
+    setFailed([]);
     setError(null);
     setDone(null);
     if (!file) return;
@@ -123,7 +137,9 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
       const { read, utils } = await import("xlsx"); // ~200 KB gzip: only fetched when a file is picked
       const book = read(await file.arrayBuffer());
       const sheet = book.Sheets[book.SheetNames[0]];
-      setParsed(parseContactRows(utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true })));
+      const result = parseContactRows(utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true }));
+      setParsed(result);
+      setFailed(result.invalid);
     } catch (e) {
       setError(
         e instanceof Error && e.message.startsWith("Kolom")
@@ -162,9 +178,12 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
         <h2>Tambah kontak dari Excel</h2>
       </div>
       <p className="hint">
-        Baris pertama harus judul kolom. Wajib ada kolom nomor (misalnya <q>Nomor</q> atau <q>No HP</q>), kolom{" "}
-        <q>Nama</q> boleh ada.
+        Paling gampang: unduh template, isi nama dan nomor, lalu upload di bawah. Nomor boleh ditulis <q>0812...</q>,{" "}
+        <q>812...</q>, atau <q>+62 812...</q>, semuanya otomatis jadi +62.
       </p>
+      <button type="button" className="secondary" onClick={downloadTemplate}>
+        Unduh template Excel
+      </button>
       <label>
         Pilih file
         <input key={inputKey} type="file" accept=".xlsx,.xls,.csv" onChange={(e) => pick(e.target.files?.[0])} />
@@ -175,16 +194,6 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
             <strong>{parsed.contacts.length}</strong> nomor siap disimpan.
           </p>
           {parsed.duplicates > 0 && <p className="muted">{parsed.duplicates} nomor dobel di file dilewati.</p>}
-          {parsed.invalid.length > 0 && (
-            <p className="warn">
-              {parsed.invalid.length} nomor salah dan tidak disimpan (baris{" "}
-              {parsed.invalid
-                .slice(0, 10)
-                .map((x) => x.row)
-                .join(", ")}
-              {parsed.invalid.length > 10 && ", dan lainnya"}).
-            </p>
-          )}
           {parsed.contacts.length > 0 && (
             <button type="button" className="primary" onClick={save} disabled={busy}>
               {busy ? "Menyimpan..." : `Simpan ${parsed.contacts.length} kontak`}
@@ -193,6 +202,24 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
         </div>
       )}
       {done && <p className="ok">{done}</p>}
+      {failed.length > 0 && (
+        <div className="stack-sm">
+          <p className="warn">
+            {failed.length} nomor salah dan tidak disimpan. Perbaiki di file, lalu upload lagi (kontak yang sudah masuk
+            tidak akan dobel).
+          </p>
+          <ul className="list">
+            {failed.slice(0, FAILED_SHOWN).map((x) => (
+              <li key={x.row}>
+                <span>
+                  Baris {x.row}: {x.name || "Tanpa nama"} <span className="muted">{x.value}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {failed.length > FAILED_SHOWN && <p className="muted">Dan {failed.length - FAILED_SHOWN} baris lainnya.</p>}
+        </div>
+      )}
       {error && (
         <p className="error" role="alert">
           {error}

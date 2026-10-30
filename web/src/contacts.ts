@@ -18,7 +18,7 @@ export function normalizePhone(raw: unknown): string | null {
 type Contact = { phone: string; name: string | null };
 export type ParseResult = {
   contacts: Contact[];
-  invalid: { row: number; value: string }[];
+  invalid: { row: number; value: string; name: string | null }[];
   duplicates: number;
 };
 
@@ -38,9 +38,10 @@ export function parseContactRows(rows: unknown[][]): ParseResult {
   rows.slice(1).forEach((row, i) => {
     const value = row[phoneCol];
     if (value === undefined || value === null || String(value).trim() === "") return;
+    const name = nameCol >= 0 ? String(row[nameCol] ?? "").trim() || null : null;
     const phone = normalizePhone(value);
     if (!phone) {
-      result.invalid.push({ row: i + 2, value: String(value) });
+      result.invalid.push({ row: i + 2, value: String(value), name });
       return;
     }
     if (seen.has(phone)) {
@@ -48,8 +49,7 @@ export function parseContactRows(rows: unknown[][]): ParseResult {
       return;
     }
     seen.add(phone);
-    const name = nameCol >= 0 ? String(row[nameCol] ?? "").trim() : "";
-    result.contacts.push({ phone, name: name || null });
+    result.contacts.push({ phone, name });
   });
   return result;
 }
