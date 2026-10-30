@@ -22,6 +22,7 @@ export type Outlet = {
   delay_max_sec: number;
   send_start: string;
   send_end: string;
+  timezone: string;
   last_seen_at: string | null;
   version: number;
   // Block-risk controls (see migration 20261027010000_risk_controls.sql)

@@ -18,7 +18,7 @@ export function PromoTab({ outlet }: { outlet: Outlet }) {
 
   const load = useCallback(async () => {
     const [c, p, limit] = await Promise.all([
-      db.from("campaigns").select("*").order("created_at", { ascending: false }),
+      db.from("campaigns").select("*").eq("outlet_id", outlet.id).order("created_at", { ascending: false }),
       db.from("campaign_progress").select("*"),
       db.rpc("today_limit", { p_outlet_id: outlet.id }),
     ]);
@@ -37,7 +37,10 @@ export function PromoTab({ outlet }: { outlet: Outlet }) {
     <div className="stack-lg">
       <NewPromo outlet={outlet} onCreated={load} />
       <section className="stack">
-        <h2>Promo kamu</h2>
+        <div className="section-title">
+          <h2>Promo kamu</h2>
+          {campaigns && campaigns.length > 0 && <span className="hint">{campaigns.length} promo</span>}
+        </div>
         {error && <p className="error">{error}</p>}
         {campaigns === null && !error && <p className="muted">Memuat promo...</p>}
         {campaigns?.length === 0 && <p className="empty">Belum ada promo. Buat promo pertama kamu di atas.</p>}
@@ -104,7 +107,10 @@ function NewPromo({ outlet, onCreated }: { outlet: Outlet; onCreated: () => void
 
   return (
     <section className="card stack">
-      <h2>Buat promo baru</h2>
+      <div className="card-head">
+        <h2>Buat promo baru</h2>
+        <p>Foto dan pesan yang akan dikirim ke semua kontak aktif.</p>
+      </div>
       <form key={formKey} onSubmit={submit} className="stack">
         <label>
           Nama promo <span className="muted">(hanya untuk kamu, tidak ikut dikirim)</span>
@@ -211,7 +217,7 @@ function PromoCard({
         {imageUrl && <img src={imageUrl} alt="" className="thumb" />}
         <div className="stack-sm">
           <h3>{campaign.title}</h3>
-          <p className={`badge ${campaign.status}`}>{STATUS_TEXT[campaign.status]}</p>
+          <span className={`pill ${campaign.status}`}>{STATUS_TEXT[campaign.status]}</span>
           <p className="message-preview">{campaign.message}</p>
         </div>
       </div>
@@ -228,10 +234,24 @@ function PromoCard({
           >
             <span style={{ width: `${percent}%` }} />
           </div>
-          <p>
-            <strong>{p.sent}</strong> terkirim dari {p.total} kontak
-            {p.failed > 0 && <>, {p.failed} gagal</>}
-            {p.skipped > 0 && <>, {p.skipped} dilewati</>}
+          <p className="promo-stats">
+            <span>
+              <b>{p.sent}</b> terkirim
+            </span>
+            <span>
+              <b>{p.waiting}</b> menunggu
+            </span>
+            {p.failed > 0 && (
+              <span>
+                <b>{p.failed}</b> gagal
+              </span>
+            )}
+            {p.skipped > 0 && (
+              <span>
+                <b>{p.skipped}</b> dilewati
+              </span>
+            )}
+            <span>dari {p.total} kontak</span>
           </p>
         </div>
       )}

@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { read, utils } from "xlsx";
 import { usePoll } from "./App";
 import { type ParseResult, parseContactRows } from "./contacts";
 import { db, type Outlet } from "./supabase";
@@ -20,6 +19,7 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
     let list = db
       .from("contacts")
       .select("id, phone, name, opted_out, not_on_whatsapp")
+      .eq("outlet_id", outlet.id) // a supervisor sees every outlet's rows through RLS
       .order("created_at")
       .limit(PAGE);
     if (term) {
@@ -29,9 +29,13 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
       list = list.or(digits ? `name.ilike.%${name}%,phone.ilike.%${digits}%` : `name.ilike.%${name}%`);
     }
     const [all, stopped, noWa, page] = await Promise.all([
-      db.from("contacts").select("id", { count: "exact", head: true }),
-      db.from("contacts").select("id", { count: "exact", head: true }).eq("opted_out", true),
-      db.from("contacts").select("id", { count: "exact", head: true }).eq("not_on_whatsapp", true),
+      db.from("contacts").select("id", { count: "exact", head: true }).eq("outlet_id", outlet.id),
+      db.from("contacts").select("id", { count: "exact", head: true }).eq("outlet_id", outlet.id).eq("opted_out", true),
+      db
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
+        .eq("outlet_id", outlet.id)
+        .eq("not_on_whatsapp", true),
       list,
     ]);
     if (all.error || stopped.error || noWa.error || page.error) {
@@ -41,7 +45,7 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
     setError(null);
     setCounts({ total: all.count ?? 0, stopped: stopped.count ?? 0, noWa: noWa.count ?? 0 });
     setRows(page.data as Row[]);
-  }, [search]);
+  }, [search, outlet.id]);
   usePoll(load, 15000);
 
   async function remove(row: Row) {
@@ -55,13 +59,15 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
     <div className="stack-lg">
       <Upload outlet={outlet} onSaved={load} />
       <section className="stack">
-        <h2>Daftar kontak</h2>
-        {counts && (
-          <p>
-            <strong>{counts.total}</strong> kontak
-            {counts.stopped > 0 && <>, {counts.stopped} sudah minta berhenti</>}
-            {counts.noWa > 0 && <>, {counts.noWa} tidak punya WhatsApp</>}
-            {counts.stopped + counts.noWa > 0 && <>. Mereka tidak akan dikirimi promo.</>}
+        <div className="section-title">
+          <h2>Daftar kontak</h2>
+          {counts && <span className="hint">{counts.total} kontak</span>}
+        </div>
+        {counts && counts.stopped + counts.noWa > 0 && (
+          <p className="hint">
+            {counts.stopped > 0 && <>{counts.stopped} sudah minta berhenti. </>}
+            {counts.noWa > 0 && <>{counts.noWa} tidak punya WhatsApp. </>}
+            Mereka tidak akan dikirimi promo.
           </p>
         )}
         <label>
@@ -114,6 +120,7 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
     setDone(null);
     if (!file) return;
     try {
+      const { read, utils } = await import("xlsx"); // ~200 KB gzip: only fetched when a file is picked
       const book = read(await file.arrayBuffer());
       const sheet = book.Sheets[book.SheetNames[0]];
       setParsed(parseContactRows(utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: true })));
@@ -151,7 +158,9 @@ function Upload({ outlet, onSaved }: { outlet: Outlet; onSaved: () => void }) {
 
   return (
     <section className="card stack">
-      <h2>Tambah kontak dari Excel</h2>
+      <div className="card-head">
+        <h2>Tambah kontak dari Excel</h2>
+      </div>
       <p className="hint">
         Baris pertama harus judul kolom. Wajib ada kolom nomor (misalnya <q>Nomor</q> atau <q>No HP</q>), kolom{" "}
         <q>Nama</q> boleh ada.

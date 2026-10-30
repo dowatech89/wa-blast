@@ -53,22 +53,27 @@ export function ConnectTab({ outlet }: { outlet: Outlet }) {
 
   return (
     <section className="card stack">
-      <h2>Sambungkan WhatsApp</h2>
-      {qrUrl ? (
-        <img src={qrUrl} alt="Kode QR untuk menyambungkan WhatsApp" className="qr" />
-      ) : (
-        <p className="muted">Menyiapkan kode QR...</p>
-      )}
-      <ol className="steps">
-        <li>Buka WhatsApp di HP captain.</li>
-        <li>
-          Ketuk <strong>titik tiga</strong> (Android) atau <strong>Pengaturan</strong> (iPhone), lalu{" "}
-          <strong>Perangkat tertaut</strong>.
-        </li>
-        <li>
-          Ketuk <strong>Tautkan perangkat</strong>, lalu arahkan kamera HP ke kode di atas.
-        </li>
-      </ol>
+      <div className="card-head">
+        <h2>Sambungkan WhatsApp</h2>
+        <p>Cukup sekali. Setelah itu PC boleh dimatikan dan dinyalakan lagi.</p>
+      </div>
+      <div className="qr-layout">
+        {qrUrl ? (
+          <img src={qrUrl} alt="Kode QR untuk menyambungkan WhatsApp" className="qr" />
+        ) : (
+          <p className="muted">Menyiapkan kode QR...</p>
+        )}
+        <ol className="steps">
+          <li>Buka WhatsApp di HP captain.</li>
+          <li>
+            Ketuk <strong>titik tiga</strong> (Android) atau <strong>Pengaturan</strong> (iPhone), lalu{" "}
+            <strong>Perangkat tertaut</strong>.
+          </li>
+          <li>
+            Ketuk <strong>Tautkan perangkat</strong>, lalu arahkan kamera HP ke kode ini.
+          </li>
+        </ol>
+      </div>
       <p className="hint">Kode berganti sendiri setiap 30 detik. Kalau gagal, scan saja kode yang baru.</p>
       {error && <p className="error">{error}</p>}
     </section>

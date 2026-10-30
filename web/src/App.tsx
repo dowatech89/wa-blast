@@ -4,9 +4,10 @@ import { AdminTab, MyPassword } from "./Accounts";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
 import { toEmail } from "./login";
+import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
-import { db, isPcOnline, type Outlet } from "./supabase";
+import { db, type Outlet } from "./supabase";
 
 const POLL_MS = 4000;
 
@@ -49,43 +50,47 @@ function Login() {
 
   return (
     <main className="login">
-      <h1 className="brand">WA Blast</h1>
-      <p className="muted">Masuk pakai akun outlet kamu.</p>
-      <form onSubmit={submit} className="stack">
-        <label>
-          Nama pengguna
-          <input
-            autoComplete="username"
-            autoCapitalize="none"
-            spellCheck={false}
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </label>
-        <label>
-          Kata sandi
-          <input
-            type={show ? "text" : "password"}
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
-        <label className="check">
-          <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} />
-          Tampilkan kata sandi
-        </label>
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="primary" disabled={busy}>
-          {busy ? "Masuk..." : "Masuk"}
-        </button>
-      </form>
+      <div className="login-card">
+        <div className="card-head">
+          <h1 className="brand">WA Blast</h1>
+          <p>Kirim promo WhatsApp outlet kamu. Masuk pakai akun dari admin.</p>
+        </div>
+        <form onSubmit={submit} className="stack">
+          <label>
+            Nama pengguna
+            <input
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </label>
+          <label>
+            Kata sandi
+            <input
+              type={show ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} />
+            Tampilkan kata sandi
+          </label>
+          {error && (
+            <p className="error" role="alert">
+              {error}
+            </p>
+          )}
+          <button type="submit" className="primary" disabled={busy}>
+            {busy ? "Masuk..." : "Masuk"}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
@@ -153,8 +158,6 @@ function Dashboard() {
   if (error && !outlet) return <p className="page-message error">{error}</p>;
   if (!outlet) return <p className="page-message">Memuat...</p>;
 
-  const pcOn = isPcOnline(outlet);
-  const waOn = outlet.wa_status === "connected";
   const shown = tab === "admin" && !isSupervisor ? "promo" : tab;
 
   return (
@@ -180,10 +183,6 @@ function Dashboard() {
         </label>
       )}
 
-      <ul className="status" aria-label="Status">
-        <li className={pcOn ? "on" : "off"}>{pcOn ? "PC outlet menyala" : "PC outlet mati"}</li>
-        <li className={waOn ? "on" : "off"}>{waOn ? "WhatsApp tersambung" : "WhatsApp belum tersambung"}</li>
-      </ul>
       {error && <p className="error">{error}</p>}
       {outlet.pause_reason && (
         <div className="alert" role="alert">
@@ -200,6 +199,8 @@ function Dashboard() {
           </button>
         </div>
       )}
+
+      <Overview key={`overview-${outlet.id}`} outlet={outlet} />
 
       <nav className="tabs" aria-label="Menu">
         {TABS.filter((t) => t.id !== "admin" || isSupervisor).map((t) => (
