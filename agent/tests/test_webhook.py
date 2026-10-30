@@ -72,3 +72,16 @@ def test_frozen_exe_reads_bundled_config_then_lets_a_file_next_to_it_override(mo
     monkeypatch.setattr(sys, "_MEIPASS", str(tmp_path / "bundle"), raising=False)
     monkeypatch.setattr(sys, "executable", str(tmp_path / "install" / "WABlast.exe"))
     assert config._env_files() == (tmp_path / "bundle" / "wablast.env", tmp_path / "install" / "wablast.env")
+
+
+def test_second_wablast_on_the_same_pc_is_refused():
+    from wablast.main import claim_single_instance
+
+    first = claim_single_instance()
+    try:
+        assert claim_single_instance() is None
+    finally:
+        if first:
+            import ctypes
+
+            ctypes.windll.kernel32.CloseHandle(first)

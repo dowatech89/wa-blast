@@ -42,6 +42,20 @@ def set_autostart(enabled: bool) -> None:
                 winreg.DeleteValue(k, "WABlast")
 
 
+def claim_single_instance() -> int | None:
+    """Mutex handle, or None when another WABlast already runs: a second GOWA would be refused on its port.
+
+    Windows frees the mutex when the owning process exits, so a crash never leaves it stuck.
+    """
+    import ctypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    handle = kernel32.CreateMutexW(None, False, "Local\\WABlast")
+    if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS
+        return None
+    return handle
+
+
 def wait_until_ready(gowa: Gowa) -> None:
     for _ in range(READY_ATTEMPTS):
         try:
@@ -57,6 +71,15 @@ def main() -> None:
         raise SystemExit("--autostart only applies to the built WABlast.exe")
     if "--autostart" in sys.argv or "--no-autostart" in sys.argv:
         set_autostart("--autostart" in sys.argv)
+    instance = claim_single_instance()  # held until this process exits
+    if instance is None:
+        from tkinter import Tk, messagebox
+
+        root = Tk()
+        root.withdraw()
+        messagebox.showinfo("WA Blast", "WA Blast sudah jalan di belakang layar. Buka dashboard untuk melihat status.")
+        root.destroy()
+        return
     handlers: list[logging.Handler] = [
         RotatingFileHandler(data_dir() / "wablast.log", maxBytes=2_000_000, backupCount=3, encoding="utf-8")
     ]

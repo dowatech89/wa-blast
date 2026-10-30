@@ -24,7 +24,8 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Akun `sunset` (outlet Sunset Grill, device `sunset-grill`) + akun `supervisor`; kata sandi di `.env.admin.local`
 - [x] Cek online: tamu ditolak, daftar akun ditolak, captain hanya lihat outletnya, login dashboard produksi lolos
 - [ ] ⏳ Hapus access token Supabase setelah setup (supabase.com/dashboard/account/tokens)
-- [ ] ⏳ Scan QR nomor captain pilot
+- [x] Scan QR nomor pilot dari dashboard online (laptop, GOWA v9.8.0) → tersambung
+- [x] GOWA naik ke v9.8.0: v9.6.0 kena "can't link new devices" padahal WhatsApp Web bisa; 26 test lolos, exe dibuild ulang
 - [ ] ⏳ Kirim 1 foto + teks ke HP tim → masuk
 
 ## Phase 2 — Mesin Kirim Python
@@ -106,5 +107,6 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [ ] Bagikan panduan + link dashboard ke 5 captain
 
 ## Batasan yang diketahui
+- `WABlast.exe` hanya jalan 1 kali per PC; klik kedua menampilkan "sudah jalan di belakang layar".
 - Kalau `WABlast.exe` ditutup paksa lewat Task Manager, proses GOWA di dalamnya bisa tertinggal dan menahan port 3100. Restart PC menyelesaikannya.
 - Risiko blokir WhatsApp tidak bisa nol (nomor biasa + gateway tidak resmi).

@@ -14,7 +14,7 @@
 - Throttle without sleep: outlets.next_send_at + claim_next_message() with FOR UPDATE SKIP LOCKED.
 - All send + risk settings live in outlets table (dashboard or Supabase); agent re-reads each tick. Guide: docs/guides/pengaturan-backend.md.
 
-- GOWA pinned v9.6.0 (tools/gowa/gowa.exe).
+- GOWA pinned v9.8.0 (tools/gowa/gowa.exe); v9.6.0 hit "can't link new devices" while WhatsApp Web linked fine (2026-10-30).
 - Built: agent/ (Python, WABlast.exe via build.bat, autostart only with --autostart), web/ (Vite+React static, not Next). Migrations 20261027000000_init + 20261027010000_risk_controls; OCC errcode PT409 = HTTP 409. Local test stack: npx supabase@2.120.0 start.
 
 ## Tool quirks

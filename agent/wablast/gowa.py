@@ -1,4 +1,4 @@
-"""Thin client for the bundled GOWA (go-whatsapp-web-multidevice v9.6.0) REST API."""
+"""Thin client for the bundled GOWA (go-whatsapp-web-multidevice v9.8.0) REST API."""
 
 import secrets
 import subprocess
