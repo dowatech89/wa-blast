@@ -213,7 +213,7 @@ function Dashboard() {
       {/* key resets each tab's form state when a supervisor switches outlet */}
       <main key={outlet.id}>
         {shown === "promo" && <PromoTab outlet={outlet} />}
-        {shown === "kontak" && <ContactsTab outlet={outlet} />}
+        {shown === "kontak" && <ContactsTab outlet={outlet} isSupervisor={isSupervisor} />}
         {shown === "wa" && <ConnectTab outlet={outlet} />}
         {shown === "atur" && (
           <div className="stack-lg">

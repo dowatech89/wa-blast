@@ -73,6 +73,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Edge Function `admin`: tambah outlet + akun, tambah supervisor, ganti kata sandi (hanya supervisor)
 - [x] Dashboard: menu **Admin** untuk supervisor, **Kata sandi saya** di Pengaturan untuk semua akun
 - [x] Migration `20261027040000_admin.sql` (`is_supervisor()`); `20261027030000_durable_opt_outs.sql` (STOP tidak bisa hilang)
+- [x] Tombol **Izinkan kirim lagi** (supervisor saja) untuk kontak yang membalas STOP; migration `20261030000000_allow_again.sql` dipasang online
 - [x] Test: agent 29 (6 test fungsi admin), web 19; uji klik lokal: buat outlet, ganti kata sandi, captain tidak lihat Admin
 - [x] Dipasang online: migration + fungsi; cek online: tamu 401, captain 403, supervisor bisa
 

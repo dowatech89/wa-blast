@@ -617,8 +617,15 @@ button.big {
   border-top: 1px solid var(--border);
   overflow-wrap: anywhere;
 }
-.list li > button {
+.list li > button,
+.row-actions {
   flex: none;
+}
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1) var(--space-3);
 }
 .list li:first-child {
   border-top: 0;

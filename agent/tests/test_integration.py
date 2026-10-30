@@ -306,6 +306,15 @@ def test_linking_a_new_number_restarts_warmup(db, admin, outlet):
     assert db.rpc("today_limit", {"p_outlet_id": outlet["id"]}).execute().data == 10
 
 
+def sign_in_supervisor(stack, admin):
+    email = f"supervisor-{uuid.uuid4().hex[:8]}@test.local"
+    sup = admin.auth.admin.create_user({"email": email, "password": "test-password-123", "email_confirm": True}).user
+    admin.table("supervisors").insert({"user_id": sup.id}).execute()
+    sup_db = create_client(stack["url"], stack["anon"])
+    sup_db.auth.sign_in_with_password({"email": email, "password": "test-password-123"})
+    return sup, sup_db
+
+
 def test_supervisor_sees_every_outlet_captain_only_own(stack, admin, outlet, db):
     other = admin.auth.admin.create_user(
         {"email": f"other-{uuid.uuid4().hex[:8]}@test.local", "password": "test-password-123", "email_confirm": True}
@@ -323,11 +332,7 @@ def test_supervisor_sees_every_outlet_captain_only_own(stack, admin, outlet, db)
             "timezone": "Asia/Jakarta",
         }
     ).execute()
-    email = f"supervisor-{uuid.uuid4().hex[:8]}@test.local"
-    sup = admin.auth.admin.create_user({"email": email, "password": "test-password-123", "email_confirm": True}).user
-    admin.table("supervisors").insert({"user_id": sup.id}).execute()
-    sup_db = create_client(stack["url"], stack["anon"])
-    sup_db.auth.sign_in_with_password({"email": email, "password": "test-password-123"})
+    sup, sup_db = sign_in_supervisor(stack, admin)
 
     seen = {r["id"] for r in sup_db.table("outlets").select("id").execute().data}
     assert {outlet["id"]} < seen
@@ -357,6 +362,24 @@ def test_opt_out_survives_delete_reimport_and_direct_edits(db, outlet):
     rows = db.table("contacts").select("phone,opted_out").in_("phone", [phone, stranger]).execute().data
     assert all(r["opted_out"] for r in rows) and len(rows) == 2
     db.table("contacts").delete().in_("phone", [phone, stranger]).execute()
+
+
+def test_only_a_supervisor_can_allow_a_stopped_number_again(stack, admin, db, outlet):
+    phone = f"62814{uuid.uuid4().int % 10**8:08d}"
+    contact = {"outlet_id": outlet["id"], "phone": phone, "name": "Teman"}
+    row = db.table("contacts").insert(contact).execute().data[0]
+    db.rpc("opt_out_contact", {"p_outlet_id": outlet["id"], "p_phone": phone}).execute()
+
+    with pytest.raises(APIError, match="supervisors only"):
+        db.rpc("allow_contact_again", {"p_contact_id": row["id"]}).execute()
+    _, sup_db = sign_in_supervisor(stack, admin)
+    sup_db.rpc("allow_contact_again", {"p_contact_id": row["id"]}).execute()
+
+    # Lifted for good: a delete and re-import no longer brings the STOP back.
+    db.table("contacts").delete().eq("id", row["id"]).execute()
+    db.table("contacts").insert(contact).execute()
+    assert db.table("contacts").select("opted_out").eq("phone", phone).single().execute().data == {"opted_out": False}
+    db.table("contacts").delete().eq("phone", phone).execute()
 
 
 def test_session_is_refreshed_well_before_expiry(stack, outlet, tmp_path, monkeypatch):

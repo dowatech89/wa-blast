@@ -8,7 +8,7 @@ const SAVE_BATCH = 500;
 
 type Row = { id: string; phone: string; name: string | null; opted_out: boolean; not_on_whatsapp: boolean };
 
-export function ContactsTab({ outlet }: { outlet: Outlet }) {
+export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSupervisor: boolean }) {
   const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number } | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [search, setSearch] = useState("");
@@ -55,6 +55,21 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
     load();
   }
 
+  async function allowAgain(row: Row) {
+    if (
+      !confirm(
+        `${row.name || row.phone} pernah membalas STOP. Kirim promo ke nomor ini lagi?
+
+` +
+          "Lakukan hanya kalau pelanggan sudah setuju. Pelanggan yang dikirimi tanpa setuju bisa melaporkan nomor outlet sebagai spam.",
+      )
+    )
+      return;
+    const { error } = await db.rpc("allow_contact_again", { p_contact_id: row.id });
+    if (error) setError("Gagal mengizinkan kirim lagi. Coba lagi.");
+    load();
+  }
+
   return (
     <div className="stack-lg">
       <Upload outlet={outlet} onSaved={load} />
@@ -90,9 +105,16 @@ export function ContactsTab({ outlet }: { outlet: Outlet }) {
                   {r.opted_out && <span className="badge done">Minta berhenti</span>}
                   {r.not_on_whatsapp && <span className="badge done">Tidak punya WhatsApp</span>}
                 </span>
-                <button type="button" className="link danger-text" onClick={() => remove(r)}>
-                  Hapus
-                </button>
+                <span className="row-actions">
+                  {r.opted_out && isSupervisor && (
+                    <button type="button" className="link" onClick={() => allowAgain(r)}>
+                      Izinkan kirim lagi
+                    </button>
+                  )}
+                  <button type="button" className="link danger-text" onClick={() => remove(r)}>
+                    Hapus
+                  </button>
+                </span>
               </li>
             ))}
           </ul>
