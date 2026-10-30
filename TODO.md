@@ -36,6 +36,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Webhook lokal "STOP" dengan verifikasi HMAC
 - [x] 11 test (3 unit + 8 integrasi ke Supabase lokal + GOWA asli) lolos; ruff, mypy, pyright, vulture bersih
 - [x] Tes kirim sungguhan ke 3 nomor tim; balasan STOP tercatat ±17 detik setelah terkirim
+- [x] STOP dibalas saat WABlast mati tetap tercatat: masuk 5 detik setelah WABlast dinyalakan lagi
 
 ## Phase 3 — Dashboard (bahasa sederhana)
 - [x] Halaman Masuk
