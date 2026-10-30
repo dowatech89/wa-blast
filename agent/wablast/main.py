@@ -12,6 +12,7 @@ from typing import Any, cast
 import httpx
 from postgrest.exceptions import APIError
 from storage3.exceptions import StorageApiError
+from supabase_auth.errors import AuthError
 
 from . import session, webhook
 from .config import Settings, app_dir, data_dir
@@ -91,8 +92,9 @@ def main() -> None:
         # ponytail: fixed-interval poll of the DB queue; switch to Supabase Realtime if ticks get costly.
         while not stop.wait(settings.tick_seconds):
             try:
+                session.keep_fresh(db)
                 agent.tick()
-            except (APIError, StorageApiError, GowaError, httpx.HTTPError):
+            except (APIError, StorageApiError, GowaError, httpx.HTTPError, AuthError):
                 # Network blip or GOWA hiccup: logged with traceback, retried next tick. Queue state is in the DB.
                 log.exception("tick failed")
     finally:

@@ -9,6 +9,7 @@ import hmac
 import json
 import shutil
 import threading
+import time
 import uuid
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -356,3 +357,39 @@ def test_opt_out_survives_delete_reimport_and_direct_edits(db, outlet):
     rows = db.table("contacts").select("phone,opted_out").in_("phone", [phone, stranger]).execute().data
     assert all(r["opted_out"] for r in rows) and len(rows) == 2
     db.table("contacts").delete().in_("phone", [phone, stranger]).execute()
+
+
+def test_session_is_refreshed_well_before_expiry(stack, outlet, tmp_path, monkeypatch):
+    client = session.connect(
+        stack["url"], stack["anon"], tmp_path / "s.json", credentials=lambda _e: (outlet["email"], outlet["password"])
+    )
+    old = client.auth.get_session()
+    assert old is not None and old.expires_at is not None
+    real_time = time.time
+    # The PC clock reads 5 minutes before expiry: the server may already disagree, so refresh now.
+    monkeypatch.setattr(time, "time", lambda: old.expires_at - 300)
+    session.keep_fresh(client)
+    monkeypatch.setattr(time, "time", real_time)
+    new = client.auth.get_session()
+    assert new is not None and new.access_token != old.access_token
+    assert client.table("outlets").select("id").execute().data  # requests now carry the new token
+
+
+def test_dead_saved_session_asks_to_log_in_again(stack, outlet, tmp_path):
+    file = tmp_path / "s.json"
+    creds = lambda _e: (outlet["email"], outlet["password"])  # noqa: E731
+    session.connect(stack["url"], stack["anon"], file, credentials=creds)
+    saved = json.loads(file.read_text("utf-8"))
+    key, raw = next(iter(saved.items()))
+    data = json.loads(raw)
+    # Revoke that refresh token on the server, then put back an expired copy, as after a long power-off.
+    revoker = create_client(stack["url"], stack["anon"])
+    revoker.auth.set_session(data["access_token"], data["refresh_token"])
+    revoker.auth.sign_out()
+    data["expires_at"] = int(time.time()) - 60
+    file.write_text(json.dumps({key: json.dumps(data)}), "utf-8")
+
+    asked = []
+    client = session.connect(stack["url"], stack["anon"], file, credentials=lambda e: asked.append(e) or creds(e))
+    assert asked == [None]
+    assert client.table("outlets").select("id").execute().data

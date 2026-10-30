@@ -1,11 +1,12 @@
 """Supabase login for this PC. The captain signs in once; the session is kept in %APPDATA%\\WABlast."""
 
 import json
+import time
 from pathlib import Path
 
 from supabase import Client, ClientOptions, create_client
 from supabase_auth import SyncSupportedStorage  # pyright: ignore[reportPrivateImportUsage]
-from supabase_auth.errors import AuthApiError
+from supabase_auth.errors import AuthApiError, AuthSessionMissingError
 
 LOGIN_DOMAIN = "wablast.local"  # same as web/src/supabase.ts
 
@@ -67,10 +68,28 @@ def ask_autostart() -> bool:
     return answer
 
 
+# Refresh this long before expiry: the PC clock can run behind Supabase's, and the token lives 1 hour.
+REFRESH_BEFORE_SECONDS = 600
+
+
+def keep_fresh(client: Client) -> None:
+    """Called every tick. supabase-py's own refresh timer runs in a background thread whose errors vanish in
+    the windowed exe; after one silent failure every request got "JWT expired" and the PC looked switched off."""
+    current = client.auth.get_session()
+    if current is None or current.expires_at is None:
+        raise AuthSessionMissingError()
+    if current.expires_at - time.time() < REFRESH_BEFORE_SECONDS:
+        client.auth.refresh_session()
+
+
 def connect(url: str, anon_key: str, session_file: Path, credentials=ask_credentials) -> Client:
-    client = create_client(url, anon_key, options=ClientOptions(storage=FileStorage(session_file)))
-    if client.auth.get_session() is not None:
-        return client
+    options = ClientOptions(storage=FileStorage(session_file), auto_refresh_token=False)  # keep_fresh() does it
+    client = create_client(url, anon_key, options=options)
+    try:
+        if client.auth.get_session() is not None:
+            return client
+    except AuthApiError:
+        pass  # saved login was revoked or is too old to refresh: ask again below
     error = None
     while True:
         email, password = credentials(error)
