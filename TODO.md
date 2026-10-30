@@ -26,7 +26,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [ ] ⏳ Hapus access token Supabase setelah setup (supabase.com/dashboard/account/tokens)
 - [x] Scan QR nomor pilot dari dashboard online (laptop, GOWA v9.8.0) → tersambung
 - [x] GOWA naik ke v9.8.0: v9.6.0 kena "can't link new devices" padahal WhatsApp Web bisa; 26 test lolos, exe dibuild ulang
-- [ ] ⏳ Kirim 1 foto + teks ke HP tim → masuk
+- [x] Kirim foto + teks + {nama} ke 3 nomor tim dari dashboard online (2026-10-30): 3 terkirim, promo otomatis Selesai
 
 ## Phase 2 — Mesin Kirim Python
 - [x] `config.py`, `session.py` (login akun outlet sekali, sesi tersimpan; kata sandi salah diminta ulang)
@@ -35,7 +35,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Jeda acak, batas harian, jam kirim dibaca dari tabel `outlets` (di DB, tanpa `sleep`)
 - [x] Webhook lokal "STOP" dengan verifikasi HMAC
 - [x] 11 test (3 unit + 8 integrasi ke Supabase lokal + GOWA asli) lolos; ruff, mypy, pyright, vulture bersih
-- [ ] ⏳ Tes kirim sungguhan ke 3 nomor tim (butuh WA tersambung)
+- [x] Tes kirim sungguhan ke 3 nomor tim; balasan STOP tercatat ±17 detik setelah terkirim
 
 ## Phase 3 — Dashboard (bahasa sederhana)
 - [x] Halaman Masuk
@@ -49,6 +49,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Kontras WCAG AA semua teks, tombol ≥ 44px, keyboard + fokus terlihat, tanpa scroll samping
 - [x] Arah desain di `DESIGN.md` (warna, font Plus Jakarta Sans, spasi, radius); ringkasan bento "Siap kirim?" di atas semua menu
 - [ ] ⏳ Logo outlet/brand (opsional)
+- [ ] Edit promo (judul, foto, pesan) selama belum dinyalakan atau sedang dimatikan
 - [x] Repo publik https://github.com/dowatech89/wa-blast (tanpa `.agents/`, kunci, dan binary)
 - [x] Deploy dashboard ke Vercel dari repo GitHub: https://wa-blast-dowa1.vercel.app (Vercel Authentication dimatikan)
 
