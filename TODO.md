@@ -49,6 +49,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Uji klik di browser (Playwright, lebar HP 390px): login salah/benar, QR asli tampil, upload Excel, cari nama & nomor, hapus, buat promo, NYALAKAN, MATIKAN, konflik versi (pesan jelas), validasi pengaturan, PC mati terdeteksi, keluar
 - [x] Kontras WCAG AA semua teks, tombol ≥ 44px, keyboard + fokus terlihat, tanpa scroll samping
 - [x] Arah desain di `DESIGN.md` (warna, font Plus Jakarta Sans, spasi, radius); ringkasan bento "Siap kirim?" di atas semua menu
+- [x] Halaman **Semua outlet** untuk supervisor: kartu tiap outlet (PC, WhatsApp, terkirim hari ini, promo berjalan), yang bermasalah di atas; `outlet_overview()` dipasang online
 - [ ] ⏳ Logo outlet/brand (opsional)
 - [x] Tombol **Ubah promo** (judul, foto, pesan) saat belum dikirim atau berhenti sementara; database menolak edit promo yang sedang mengirim atau selesai (`20261102000000_edit_promo.sql`, dipasang online)
 - [x] Repo publik https://github.com/dowatech89/wa-blast (tanpa `.agents/`, kunci, dan binary)
@@ -108,7 +109,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 Outlet (nama pengguna usulan): D'Spa (`dspa`), D'Bistro (`dbistro`), Dragon Beach Club (`dbc`), Rooms (`rooms`), D'Bar (`dbar`).
 Plus akun Dowa (`dowa`): akun outlet biasa khusus pemilik pribadi (nomor WA dan kontak sendiri).
 Semua PC outlet Windows 10 (2026-11-02). Cek tiap PC 64-bit: exe hanya 64-bit.
-- [ ] Buat akun + baris `outlets` untuk 5 outlet (menu Admin di dashboard, login supervisor)
+- [x] 6 akun dibuat lewat menu Admin (2026-11-02): dbar, dbistro, dspa, dowa (nama "dowalabs"), dbc, rooms
 - [ ] Install exe di tiap PC (`WABlast.exe --autostart`), scan QR dari dashboard
 - [x] Panduan 1 halaman untuk captain
 - [ ] Bagikan panduan + link dashboard ke 5 captain

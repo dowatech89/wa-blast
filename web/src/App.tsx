@@ -1,6 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { AdminTab, MyPassword } from "./Accounts";
+import { AllOutlets } from "./AllOutlets";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
 import { toEmail } from "./login";
@@ -102,11 +103,11 @@ const TABS = [
   { id: "atur", label: "Pengaturan" },
   { id: "admin", label: "Admin" }, // supervisors only
 ] as const;
-type TabId = (typeof TABS)[number]["id"];
+type TabId = (typeof TABS)[number]["id"] | "semua"; // "semua": the supervisor's all-outlets page
 
 function currentTab(): TabId {
   const hash = location.hash.slice(1);
-  return TABS.some((t) => t.id === hash) ? (hash as TabId) : "promo";
+  return hash === "semua" || TABS.some((t) => t.id === hash) ? (hash as TabId) : "promo";
 }
 
 function Dashboard() {
@@ -114,7 +115,7 @@ function Dashboard() {
   const [outletId, setOutletId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>(currentTab);
-  const [isSupervisor, setIsSupervisor] = useState(false);
+  const [isSupervisor, setIsSupervisor] = useState<boolean | null>(null); // null until known: avoids a flash of the wrong page
 
   useEffect(() => {
     db.rpc("is_supervisor").then(({ data }) => setIsSupervisor(data === true));
@@ -139,12 +140,19 @@ function Dashboard() {
   usePoll(load);
 
   const outlet = outlets.find((o) => o.id === outletId) ?? outlets[0];
+  // Supervisors start on "Semua outlet"; picking a card sets outletId.
+  const overview = isSupervisor === true && outlets.length > 1 && (outletId === null || tab === "semua");
+  const openOutlet = (id: string | null) => {
+    setOutletId(id);
+    location.hash = id ? "promo" : "semua";
+  };
   const signOut = (
     <button type="button" className="link" onClick={() => db.auth.signOut()}>
       Keluar
     </button>
   );
   // A supervisor with no outlet yet still needs the Admin menu to create the first one.
+  if (isSupervisor === null) return <p className="page-message">Memuat...</p>;
   if (!outlet && isSupervisor)
     return (
       <div className="shell">
@@ -158,7 +166,31 @@ function Dashboard() {
   if (error && !outlet) return <p className="page-message error">{error}</p>;
   if (!outlet) return <p className="page-message">Memuat...</p>;
 
-  const shown = tab === "admin" && !isSupervisor ? "promo" : tab;
+  if (overview)
+    return (
+      <div className="shell">
+        <header className="top">
+          <div>
+            <p className="brand small">WA Blast</p>
+            <h1>Semua outlet</h1>
+          </div>
+          {signOut}
+        </header>
+        <nav className="tabs" aria-label="Menu">
+          <a href="#semua" aria-current={tab !== "admin" ? "page" : undefined}>
+            Semua outlet
+          </a>
+          <a href="#admin" aria-current={tab === "admin" ? "page" : undefined}>
+            Admin
+          </a>
+        </nav>
+        <main>
+          {tab === "admin" ? <AdminTab onChanged={load} /> : <AllOutlets outlets={outlets} onOpen={openOutlet} />}
+        </main>
+      </div>
+    );
+
+  const shown = (tab === "admin" && !isSupervisor) || tab === "semua" ? "promo" : tab;
 
   return (
     <div className="shell">
@@ -171,16 +203,21 @@ function Dashboard() {
       </header>
 
       {outlets.length > 1 && (
-        <label className="outlet-pick">
-          Pilih outlet
-          <select value={outlet.id} onChange={(e) => setOutletId(e.target.value)}>
-            {outlets.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="outlet-pick">
+          <button type="button" className="link" onClick={() => openOutlet(null)}>
+            ← Semua outlet
+          </button>
+          <label>
+            Pindah outlet
+            <select value={outlet.id} onChange={(e) => setOutletId(e.target.value)}>
+              {outlets.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       )}
 
       {error && <p className="error">{error}</p>}
@@ -213,7 +250,7 @@ function Dashboard() {
       {/* key resets each tab's form state when a supervisor switches outlet */}
       <main key={outlet.id}>
         {shown === "promo" && <PromoTab outlet={outlet} />}
-        {shown === "kontak" && <ContactsTab outlet={outlet} isSupervisor={isSupervisor} />}
+        {shown === "kontak" && <ContactsTab outlet={outlet} isSupervisor={isSupervisor === true} />}
         {shown === "wa" && <ConnectTab outlet={outlet} />}
         {shown === "atur" && (
           <div className="stack-lg">

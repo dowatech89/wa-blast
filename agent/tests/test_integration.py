@@ -348,6 +348,10 @@ def test_supervisor_sees_every_outlet_captain_only_own(stack, admin, outlet, db)
     assert {outlet["id"]} < seen
     assert [r["id"] for r in db.table("outlets").select("id").execute().data] == [outlet["id"]]
     assert sup_db.rpc("today_limit", {"p_outlet_id": outlet["id"]}).execute().data is not None
+    # "Semua outlet" page: one row per outlet the caller may see.
+    overview = {r["outlet_id"]: r for r in sup_db.rpc("outlet_overview").execute().data}
+    assert set(overview) == seen and overview[outlet["id"]]["today_limit"] > 0
+    assert [r["outlet_id"] for r in db.rpc("outlet_overview").execute().data] == [outlet["id"]]
     sup_db.table("outlets").update({"pause_reason": None}).eq("id", outlet["id"]).execute()
     # Sending stays with the outlet's own exe, and nobody can list or grant supervisors through the API.
     with pytest.raises(APIError, match="not yours"):
