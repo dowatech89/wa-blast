@@ -50,7 +50,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Kontras WCAG AA semua teks, tombol ≥ 44px, keyboard + fokus terlihat, tanpa scroll samping
 - [x] Arah desain di `DESIGN.md` (warna, font Plus Jakarta Sans, spasi, radius); ringkasan bento "Siap kirim?" di atas semua menu
 - [ ] ⏳ Logo outlet/brand (opsional)
-- [ ] Edit promo (judul, foto, pesan) selama belum dinyalakan atau sedang dimatikan
+- [x] Tombol **Ubah promo** (judul, foto, pesan) saat belum dikirim atau berhenti sementara; database menolak edit promo yang sedang mengirim atau selesai (`20261102000000_edit_promo.sql`, dipasang online)
 - [x] Repo publik https://github.com/dowatech89/wa-blast (tanpa `.agents/`, kunci, dan binary)
 - [x] Deploy dashboard ke Vercel dari repo GitHub: https://wa-blast-dowa1.vercel.app (Vercel Authentication dimatikan)
 
@@ -105,7 +105,9 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [ ] Pasang `trivy` untuk scan dependency (belum terpasang di laptop)
 
 ## Phase 7 — Rollout 5 Outlet Lain
-- [ ] Buat akun + baris `outlets` untuk 5 outlet
+Outlet (nama pengguna usulan): D'Spa (`dspa`), D'Bistro (`dbistro`), Dragon Beach Club (`dbc`), Rooms (`rooms`), D'Bar (`dbar`).
+Akun pribadi Dowa (`dowa`) dipisah, bukan outlet restoran.
+- [ ] Buat akun + baris `outlets` untuk 5 outlet (menu Admin di dashboard, login supervisor)
 - [ ] Install exe di tiap PC (`WABlast.exe --autostart`), scan QR dari dashboard
 - [x] Panduan 1 halaman untuk captain
 - [ ] Bagikan panduan + link dashboard ke 5 captain

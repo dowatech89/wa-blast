@@ -35,7 +35,7 @@ export function PromoTab({ outlet }: { outlet: Outlet }) {
 
   return (
     <div className="stack-lg">
-      <NewPromo outlet={outlet} onCreated={load} />
+      <PromoForm outlet={outlet} onDone={load} />
       <section className="stack">
         <div className="section-title">
           <h2>Promo kamu</h2>
@@ -59,9 +59,23 @@ export function PromoTab({ outlet }: { outlet: Outlet }) {
   );
 }
 
-function NewPromo({ outlet, onCreated }: { outlet: Outlet; onCreated: () => void }) {
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
+/** New promo, or edits `campaign` (only while draft or paused; the database refuses otherwise). */
+function PromoForm({
+  outlet,
+  campaign,
+  currentImage,
+  onDone,
+  onCancel,
+}: {
+  outlet: Outlet;
+  campaign?: Campaign;
+  currentImage?: string | null;
+  onDone: () => void;
+  onCancel?: () => void;
+}) {
+  const [title, setTitle] = useState(campaign?.title ?? "");
+  const [message, setMessage] = useState(campaign?.message ?? "");
+  const [openedVersion] = useState(campaign?.version); // polling refreshes `campaign`; compare with what was opened
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -79,7 +93,8 @@ function NewPromo({ outlet, onCreated }: { outlet: Outlet; onCreated: () => void
     e.preventDefault();
     setBusy(true);
     setError(null);
-    let image_path: string | null = null;
+    // ponytail: a replaced photo stays in storage; add cleanup if the bucket ever gets large.
+    let image_path = campaign?.image_path ?? null;
     if (file) {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       image_path = `${outlet.id}/${crypto.randomUUID()}.${ext}`;
@@ -90,9 +105,28 @@ function NewPromo({ outlet, onCreated }: { outlet: Outlet; onCreated: () => void
         return;
       }
     }
-    const { error } = await db
-      .from("campaigns")
-      .insert({ outlet_id: outlet.id, title: title.trim(), message: message.trim(), image_path });
+    const fields = { title: title.trim(), message: message.trim(), image_path };
+    if (campaign) {
+      // Version check: refuses when the promo was started or edited elsewhere since this form opened.
+      const { data, error } = await db
+        .from("campaigns")
+        .update(fields)
+        .eq("id", campaign.id)
+        .eq("version", openedVersion)
+        .select("id");
+      setBusy(false);
+      if (error || !data?.length) {
+        setError(
+          error?.message.includes("draft or paused")
+            ? "Promo yang sedang mengirim tidak bisa diubah. Tekan MATIKAN dulu."
+            : "Promo ini baru diubah dari HP lain. Tutup, lalu coba lagi.",
+        );
+        return;
+      }
+      onDone();
+      return;
+    }
+    const { error } = await db.from("campaigns").insert({ outlet_id: outlet.id, ...fields });
     setBusy(false);
     if (error) {
       setError("Promo gagal disimpan. Coba lagi.");
@@ -102,51 +136,66 @@ function NewPromo({ outlet, onCreated }: { outlet: Outlet; onCreated: () => void
     setMessage("");
     setFile(null);
     setFormKey((k) => k + 1); // clears the file input
-    onCreated();
+    onDone();
   }
 
+  const form = (
+    <form key={formKey} onSubmit={submit} className="stack">
+      <label>
+        Nama promo <span className="muted">(hanya untuk kamu, tidak ikut dikirim)</span>
+        <input required maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+      </label>
+      <label>
+        {campaign ? "Ganti foto" : "Foto promo"}{" "}
+        <span className="muted">{campaign ? "(kosongkan kalau fotonya tetap)" : "(boleh dikosongkan)"}</span>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        />
+      </label>
+      {(preview ?? currentImage) && (
+        <img src={preview ?? currentImage ?? ""} alt="Foto promo yang dipilih" className="thumb-lg" />
+      )}
+      <label>
+        Pesan
+        <textarea required rows={5} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
+      </label>
+      <p className="hint">
+        Tulis <code>{"{nama}"}</code> untuk memanggil nama pelanggan. Contoh: Halo {"{nama}"}, ada promo hari ini.
+      </p>
+      {message.trim() && (
+        <div className="hint stack-sm">
+          <span>Contoh pesan yang diterima pelanggan bernama Budi:</span>
+          <p className="bubble">{composeCaption(message, "Budi", outlet.optout_footer)}</p>
+        </div>
+      )}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="row">
+        <button type="submit" className="primary" disabled={busy}>
+          {busy ? "Menyimpan..." : campaign ? "Simpan perubahan" : "Simpan promo"}
+        </button>
+        {onCancel && (
+          <button type="button" className="secondary" onClick={onCancel} disabled={busy}>
+            Batal
+          </button>
+        )}
+      </div>
+    </form>
+  );
+
+  if (campaign) return form;
   return (
     <section className="card stack">
       <div className="card-head">
         <h2>Buat promo baru</h2>
         <p>Foto dan pesan yang akan dikirim ke semua kontak aktif.</p>
       </div>
-      <form key={formKey} onSubmit={submit} className="stack">
-        <label>
-          Nama promo <span className="muted">(hanya untuk kamu, tidak ikut dikirim)</span>
-          <input required maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <label>
-          Foto promo <span className="muted">(boleh dikosongkan)</span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        {preview && <img src={preview} alt="Foto promo yang dipilih" className="thumb-lg" />}
-        <label>
-          Pesan
-          <textarea required rows={5} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
-        </label>
-        <p className="hint">
-          Tulis <code>{"{nama}"}</code> untuk memanggil nama pelanggan. Contoh: Halo {"{nama}"}, ada promo hari ini.
-        </p>
-        {message.trim() && (
-          <div className="hint stack-sm">
-            <span>Contoh pesan yang diterima pelanggan bernama Budi:</span>
-            <p className="bubble">{composeCaption(message, "Budi", outlet.optout_footer)}</p>
-          </div>
-        )}
-        {error && (
-          <p className="error" role="alert">
-            {error}
-          </p>
-        )}
-        <button type="submit" className="primary" disabled={busy}>
-          {busy ? "Menyimpan..." : "Simpan promo"}
-        </button>
-      </form>
+      {form}
     </section>
   );
 }
@@ -170,6 +219,7 @@ function PromoCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [failed, setFailed] = useState<Failed[] | null>(null);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     if (!campaign.image_path) return;
@@ -208,6 +258,29 @@ function PromoCard({
 
   const p = progress;
   const running = campaign.status === "running";
+  const editable = campaign.status === "draft" || campaign.status === "paused";
+
+  if (editing && editable)
+    return (
+      <article className="card stack">
+        <div className="card-head">
+          <h3>Ubah promo</h3>
+          {campaign.status === "paused" && (
+            <p>Perubahan berlaku untuk pelanggan yang belum dikirimi. Yang sudah menerima tidak berubah.</p>
+          )}
+        </div>
+        <PromoForm
+          outlet={outlet}
+          campaign={campaign}
+          currentImage={imageUrl}
+          onCancel={() => setEditing(false)}
+          onDone={() => {
+            setEditing(false);
+            onChanged();
+          }}
+        />
+      </article>
+    );
   const pcOn = isPcOnline(outlet);
   const percent = p && p.total > 0 ? Math.round(((p.sent + p.failed + p.skipped) / p.total) * 100) : 0;
 
@@ -277,6 +350,11 @@ function PromoCard({
         {campaign.status !== "done" && (
           <button type="button" className={running ? "big danger" : "big primary"} onClick={toggle} disabled={busy}>
             {running ? "MATIKAN" : "NYALAKAN"}
+          </button>
+        )}
+        {editable && (
+          <button type="button" className="secondary" onClick={() => setEditing(true)} disabled={busy}>
+            Ubah promo
           </button>
         )}
         {p && p.failed + p.skipped > 0 && (

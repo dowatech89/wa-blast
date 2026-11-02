@@ -392,6 +392,23 @@ def test_only_a_supervisor_can_allow_a_stopped_number_again(stack, admin, db, ou
     db.table("contacts").delete().eq("phone", phone).execute()
 
 
+def test_promo_text_and_photo_change_only_while_draft_or_paused(db, outlet, running_campaign):
+    camp, _ = running_campaign
+    edit = lambda: db.table("campaigns").update({"message": "Halo {nama}, promo baru"}).eq("id", camp["id"]).execute()  # noqa: E731
+    with pytest.raises(APIError, match="only while draft or paused"):
+        edit()  # running: the agent may be sending it right now
+
+    current = db.table("campaigns").select("version").eq("id", camp["id"]).single().execute().data
+    db.rpc(
+        "set_campaign_status",
+        {"p_campaign_id": camp["id"], "p_status": "paused", "p_expected_version": current["version"]},
+    ).execute()
+    edit()
+    assert (
+        db.table("campaigns").select("message").eq("id", camp["id"]).single().execute().data["message"].endswith("baru")
+    )
+
+
 def test_session_is_refreshed_well_before_expiry(stack, outlet, tmp_path, monkeypatch):
     client = session.connect(
         stack["url"], stack["anon"], tmp_path / "s.json", credentials=lambda _e: (outlet["email"], outlet["password"])
