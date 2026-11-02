@@ -104,9 +104,10 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] `python .agents/scripts/while_loop_runner.py --run --report` → 10/10 lolos berturut-turut
 - [ ] Pasang `trivy` untuk scan dependency (belum terpasang di laptop)
 
-## Phase 7 — Rollout 5 Outlet Lain
+## Phase 7 — Rollout 5 Outlet Lain + Dowa
 Outlet (nama pengguna usulan): D'Spa (`dspa`), D'Bistro (`dbistro`), Dragon Beach Club (`dbc`), Rooms (`rooms`), D'Bar (`dbar`).
-Akun pribadi Dowa (`dowa`) dipisah, bukan outlet restoran.
+Plus akun Dowa (`dowa`): akun outlet biasa khusus pemilik pribadi (nomor WA dan kontak sendiri).
+Semua PC outlet Windows 10 (2026-11-02). Cek tiap PC 64-bit: exe hanya 64-bit.
 - [ ] Buat akun + baris `outlets` untuk 5 outlet (menu Admin di dashboard, login supervisor)
 - [ ] Install exe di tiap PC (`WABlast.exe --autostart`), scan QR dari dashboard
 - [x] Panduan 1 halaman untuk captain
