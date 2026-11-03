@@ -3,8 +3,6 @@ import { db, type Outlet } from "./supabase";
 
 type NumberKey =
   | "daily_limit"
-  | "delay_min_sec"
-  | "delay_max_sec"
   | "pause_after_failures"
   | "min_days_between_promos"
   | "warmup_start_limit"
@@ -14,8 +12,6 @@ export function SettingsTab({ outlet, onSaved }: { outlet: Outlet; onSaved: () =
   // Form starts from the outlet row as it was when the tab opened; `version` guards against overwriting newer edits.
   const [form, setForm] = useState({
     daily_limit: outlet.daily_limit,
-    delay_min_sec: outlet.delay_min_sec,
-    delay_max_sec: outlet.delay_max_sec,
     send_start: outlet.send_start.slice(0, 5),
     send_end: outlet.send_end.slice(0, 5),
     check_number_first: outlet.check_number_first,
@@ -42,19 +38,15 @@ export function SettingsTab({ outlet, onSaved }: { outlet: Outlet; onSaved: () =
   const invalid =
     form.daily_limit < 1
       ? "Batas harian minimal 1."
-      : form.delay_min_sec < 1
-        ? "Jeda paling cepat minimal 1 detik."
-        : form.delay_max_sec < form.delay_min_sec
-          ? "Jeda paling lama tidak boleh lebih kecil dari jeda paling cepat."
-          : form.send_end <= form.send_start
-            ? "Jam selesai harus setelah jam mulai."
-            : form.pause_after_failures < 0 || form.min_days_between_promos < 0 || form.warmup_daily_increase < 0
-              ? "Angka tidak boleh minus."
-              : form.warmup_start_limit < 1
-                ? "Pemanasan harus mulai dari minimal 1 pesan."
-                : keywords.length === 0
-                  ? "Isi minimal satu kata untuk berhenti langganan, misalnya STOP."
-                  : null;
+      : form.send_end <= form.send_start
+        ? "Jam selesai harus setelah jam mulai."
+        : form.pause_after_failures < 0 || form.min_days_between_promos < 0 || form.warmup_daily_increase < 0
+          ? "Angka tidak boleh minus."
+          : form.warmup_start_limit < 1
+            ? "Pemanasan harus mulai dari minimal 1 pesan."
+            : keywords.length === 0
+              ? "Isi minimal satu kata untuk berhenti langganan, misalnya STOP."
+              : null;
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -96,16 +88,7 @@ export function SettingsTab({ outlet, onSaved }: { outlet: Outlet; onSaved: () =
           Maksimal pesan per hari
           <input {...num("daily_limit")} />
         </label>
-        <div className="row">
-          <label>
-            Jeda paling cepat (detik)
-            <input {...num("delay_min_sec")} />
-          </label>
-          <label>
-            Jeda paling lama (detik)
-            <input {...num("delay_max_sec")} />
-          </label>
-        </div>
+        <p className="hint">Jeda antar pesan diatur otomatis: acak 30 sampai 90 detik, berbeda untuk setiap pesan.</p>
         <div className="row">
           <label>
             Mulai kirim jam

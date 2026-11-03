@@ -12,7 +12,7 @@ Semua pengaturan kirim dan pengaman nomor disimpan per outlet di tabel `outlets`
 | Kolom | Default | Arti |
 | :--- | :--- | :--- |
 | `daily_limit` | (diisi saat outlet dibuat) | Maksimal pesan terkirim per hari, setelah pemanasan selesai. |
-| `delay_min_sec`, `delay_max_sec` | (diisi saat outlet dibuat) | Jeda acak antar pesan, dalam detik. |
+| `delay_min_sec`, `delay_max_sec` | `30`, `90` | Jeda acak antar pesan, dalam detik. Dikunci sistem: tidak ada di dashboard, ubah hanya lewat SQL Editor kalau benar-benar perlu. |
 | `send_start`, `send_end` | (diisi saat outlet dibuat) | Jam kirim, dihitung dengan zona waktu di kolom `timezone`. |
 | `warmup_enabled` | `true` | Pemanasan nomor baru aktif. |
 | `warmup_start_limit` | `10` | Batas pesan pada hari pertama nomor tersambung. |
@@ -43,7 +43,7 @@ Pendaftaran umum dimatikan, jadi akun hanya bisa dibuat oleh supervisor.
 **Cara biasa, lewat dashboard** (login sebagai supervisor):
 - Menu **Admin**: tambah outlet beserta akunnya, tambah supervisor, dan **Ganti kata sandi** akun mana pun.
 - Menu **Pengaturan**, bagian **Kata sandi saya**: setiap akun bisa mengganti kata sandinya sendiri.
-- Outlet baru mulai dengan 50 pesan per hari, jeda 30-90 detik, jam 09.00-20.00 WIB. Ubah lewat menu Pengaturan outlet itu.
+- Outlet baru mulai dengan 50 pesan per hari, jam 09.00-20.00 WIB (ubah lewat menu Pengaturan outlet itu). Jeda antar pesan otomatis 30-90 detik.
 
 Menu Admin memakai Edge Function `admin` di Supabase (`supabase/functions/admin`). Kunci service-role hanya ada di server Supabase. Kalau fungsinya diubah, pasang ulang dengan:
 ```
@@ -79,7 +79,7 @@ Setelah kata sandi diganti, `WABlast.exe` di PC outlet tetap jalan, karena sesin
 Pengaturan yang lebih hati-hati untuk satu outlet:
 ```sql
 update outlets
-   set daily_limit = 40, delay_min_sec = 45, delay_max_sec = 120,
+   set daily_limit = 40,
        min_days_between_promos = 7, pause_after_failures = 2
  where name = 'Outlet Pilot';
 ```

@@ -335,9 +335,8 @@ function PromoCard({
       )}
       {running && (
         <p className="hint">
-          Pesan dikirim pelan-pelan, satu per {outlet.delay_min_sec} sampai {outlet.delay_max_sec} detik, jam{" "}
-          {outlet.send_start.slice(0, 5)} sampai {outlet.send_end.slice(0, 5)}, maksimal{" "}
-          {todayLimit ?? outlet.daily_limit} pesan hari ini.
+          Pesan dikirim pelan-pelan dengan jeda acak 30 sampai 90 detik, jam {outlet.send_start.slice(0, 5)} sampai{" "}
+          {outlet.send_end.slice(0, 5)}, maksimal {todayLimit ?? outlet.daily_limit} pesan hari ini.
         </p>
       )}
       {error && (
