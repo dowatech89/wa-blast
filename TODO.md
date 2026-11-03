@@ -33,7 +33,7 @@ Pemilik = kamu, Claude = dikerjakan di sini.
 
 **F. Opsional / terbuka**
 15. [ ] Pemilik: pastikan kontak promo sudah setuju menerima (opt-in); kirim contoh Excel asli
-16. [ ] Pasang `trivy` untuk scan dependency
+16. [x] `trivy` v0.76.1 terpasang (checksum + attestation cocok); scan 2026-11-03: certifi CRITICAL diperbaiki ke 2026.10.18, sisanya 0
 17. [ ] Logo per outlet (sekarang logo WA Blast)
 18. [ ] Tombol pesan WhatsApp (eksperimen GOWA, hanya Android): uji ke HP tim dulu kalau mau
 
@@ -149,7 +149,7 @@ Pemilik = kamu, Claude = dikerjakan di sini.
 ## Phase 6 — Quality Gates 1..10
 - [x] Perbaiki bug `.agents/`: runner memecah `(cd A && x) && (cd B && y)` per folder; probe Gate 8 pakai `python`; vulture tidak memindai `.venv` (8 test regresi di `.agents/tests/test_while_loop_runner.py`)
 - [x] `python .agents/scripts/while_loop_runner.py --run --report` → 10/10 lolos berturut-turut
-- [ ] Pasang `trivy` untuk scan dependency (belum terpasang di laptop)
+- [x] `trivy` terpasang di `~/.local/bin`; perintah scan ada di README
 
 ## Phase 7 — Rollout 5 Outlet Lain + Dowa
 Outlet (nama pengguna usulan): D'Spa (`dspa`), D'Bistro (`dbistro`), Dragon Beach Club (`dbc`), Rooms (`rooms`), D'Bar (`dbar`).

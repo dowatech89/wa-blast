@@ -18,3 +18,13 @@ Promo WhatsApp (foto + teks) untuk outlet restoran. Setiap outlet memakai nomor 
    Hasilnya 1 file `agent\dist\WABlast.exe` yang sudah berisi GOWA dan alamat Supabase.
 
 Risiko blokir WhatsApp tidak bisa nol: kirim hanya ke pelanggan yang memberikan nomornya.
+
+## Cek keamanan dependency
+Trivy (v0.76.1, `~/.local/bin/trivy.exe`) mencocokkan paket npm dan Python dengan daftar celah keamanan (CVE) dan
+mencari rahasia yang bocor. Jalankan dari root repo sebelum build exe atau deploy:
+```
+trivy fs --scanners vuln,secret,misconfig --skip-dirs "agent/.venv,web/node_modules,tools,agent/dist,agent/build,web/dist,.agents,supabase/.temp" --skip-files ".env.development.local" .
+```
+`.env.development.local` dilewati karena hanya berisi kunci demo bawaan Supabase lokal (sama untuk semua orang).
+Paket Python dikunci ke rilis minimal 2 minggu (`exclude-newer` di `agent/pyproject.toml`); perbaikan keamanan yang
+lebih baru ditambahkan satu per satu di `exclude-newer-package`.
