@@ -5,7 +5,7 @@ import { AllOutlets } from "./AllOutlets";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
 import { Icon, type IconName, Logo } from "./icons";
-import { toEmail } from "./login";
+import { LOGIN_OUTLETS, toEmail } from "./login";
 import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
@@ -40,8 +40,22 @@ export function App() {
   );
 }
 
+const OTHER = "__other";
+const LAST_OUTLET_KEY = "wablast-login-outlet"; // per-device convenience: a captain's phone remembers their outlet
+
+function lastOutlet(): string {
+  try {
+    const saved = localStorage.getItem(LAST_OUTLET_KEY);
+    return LOGIN_OUTLETS.some((o) => o.username === saved) ? (saved as string) : "";
+  } catch {
+    return "";
+  }
+}
+
 function Login() {
-  const [username, setUsername] = useState("");
+  const [choice, setChoice] = useState(lastOutlet);
+  const [typed, setTyped] = useState("");
+  const username = choice === OTHER ? typed : choice;
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +67,14 @@ function Login() {
     setError(null);
     const { error } = await db.auth.signInWithPassword({ email: toEmail(username), password });
     setBusy(false);
-    if (error) setError("Nama pengguna atau kata sandi salah.");
+    if (error) setError(choice === OTHER ? "Nama pengguna atau kata sandi salah." : "Kata sandi salah.");
+    else if (choice !== OTHER) {
+      try {
+        localStorage.setItem(LAST_OUTLET_KEY, choice);
+      } catch {
+        // private mode: the dropdown just starts empty next time
+      }
+    }
   }
 
   return (
@@ -82,20 +103,39 @@ function Login() {
       <div className="login-card">
         <div className="card-head">
           <h1>Masuk</h1>
-          <p>Pakai nama pengguna dan kata sandi dari admin.</p>
+          <p>Pilih outlet kamu, lalu isi kata sandi dari admin.</p>
         </div>
         <form onSubmit={submit} className="stack">
           <label>
-            Nama pengguna
-            <input
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
+            Outlet
+            <select required value={choice} onChange={(e) => setChoice(e.target.value)}>
+              <option value="" disabled>
+                Pilih outlet
+              </option>
+              {LOGIN_OUTLETS.map((o) => (
+                <option key={o.username} value={o.username}>
+                  {o.name}
+                </option>
+              ))}
+              <option value={OTHER}>Lainnya (ketik nama pengguna)</option>
+            </select>
           </label>
+          {choice === OTHER ? (
+            <label>
+              Nama pengguna
+              <input
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+              />
+            </label>
+          ) : (
+            // Lets password managers file the saved password under the chosen outlet's username.
+            <input type="text" autoComplete="username" value={username} readOnly hidden />
+          )}
           <label>
             Kata sandi
             <input

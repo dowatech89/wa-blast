@@ -89,6 +89,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [ ] ⏳ Jalankan di SQL Editor, berurutan (access token sudah tidak berlaku): `20261103000000_fixed_send_delay.sql` (jeda dikunci 30-90 detik acak) lalu `20261103010000_sender_name.sql` (nama pengirim)
 - [x] Jeda antar pesan otomatis: kolom jeda dihapus dari Pengaturan
 - [x] **Nama pengirim** di menu WhatsApp: WABlast memasang nama profil WhatsApp lewat GOWA `/user/pushname` (default nama outlet, ulang otomatis untuk nomor baru); gagal pasang tidak menghentikan kirim
+- [x] Login: pilih outlet dari daftar (dowa dan supervisor lewat "Lainnya"); daftar ada di `web/src/login.ts`, tambah baris saat outlet baru dibuat
 - [x] Isian `{outlet}` di pesan promo
 - [x] Tampilan: logo + favicon, login dengan panel teal, ikon status di "Siap kirim?", lingkaran progres, pratinjau chat WhatsApp, avatar inisial (kontak, outlet), kolom cari berikon, notifikasi "Tersimpan"
 - [x] `WABlast.exe` dibuild ulang 2026-11-03 (nama pengirim); dites jalan ke database online yang belum dimigrasi

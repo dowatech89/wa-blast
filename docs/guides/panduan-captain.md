@@ -15,7 +15,7 @@ Setelah itu WA Blast jalan di belakang layar tanpa jendela. Lanjut ke langkah 1 
 
 ## 1. Pertama kali: sambungkan WhatsApp
 1. Nyalakan PC outlet. WA Blast jalan sendiri di PC, tidak perlu dibuka.
-2. Di HP, buka link dashboard, lalu masuk pakai akun outlet.
+2. Di HP, buka link dashboard. Pilih outlet kamu di daftar **Outlet**, isi kata sandi, lalu **Masuk**. HP ini akan ingat outletnya untuk berikutnya.
 3. Buka menu **WhatsApp**. Tunggu sampai kode QR muncul.
 4. Di HP captain, buka WhatsApp, lalu ketuk **titik tiga** (Android) atau **Pengaturan** (iPhone), lalu **Perangkat tertaut**, lalu **Tautkan perangkat**.
 5. Arahkan kamera ke kode QR. Kalau berhasil, tulisan di atas berubah jadi **WhatsApp tersambung**.
