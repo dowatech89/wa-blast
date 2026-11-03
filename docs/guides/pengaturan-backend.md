@@ -43,7 +43,7 @@ Pendaftaran umum dimatikan, jadi akun hanya bisa dibuat oleh supervisor.
 **Cara biasa, lewat dashboard** (login sebagai supervisor):
 - Menu **Admin**: tambah outlet beserta akunnya, tambah supervisor, dan **Ganti kata sandi** akun mana pun.
 - Menu **Pengaturan**, bagian **Kata sandi saya**: setiap akun bisa mengganti kata sandinya sendiri.
-- Outlet baru mulai dengan 50 pesan per hari, jam 09.00-20.00 WIB (ubah lewat menu Pengaturan outlet itu). Jeda antar pesan otomatis 30-90 detik.
+- Outlet baru mulai dengan 50 pesan per hari, jam 10.00-18.00 WIB (ubah lewat menu Pengaturan outlet itu). Jeda antar pesan otomatis 30-90 detik.
 
 Menu Admin memakai Edge Function `admin` di Supabase (`supabase/functions/admin`). Kunci service-role hanya ada di server Supabase. Kalau fungsinya diubah, pasang ulang dengan:
 ```
@@ -58,7 +58,7 @@ Buat akun outlet baru:
 ```sql
 insert into public.outlets
   (name, owner_user_id, gowa_device_id, daily_limit, delay_min_sec, delay_max_sec, send_start, send_end, timezone)
-select 'Nama Outlet', id, 'nama-outlet', 50, 30, 90, '09:00', '20:00', 'Asia/Jakarta'
+select 'Nama Outlet', id, 'nama-outlet', 50, 30, 90, '10:00', '18:00', 'Asia/Jakarta'
   from auth.users where email = 'nama@wablast.local';
 ```
 

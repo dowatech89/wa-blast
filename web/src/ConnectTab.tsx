@@ -29,10 +29,27 @@ export function ConnectTab({ outlet }: { outlet: Outlet }) {
   }
 
   if (!pcOn) {
+    const linked = outlet.wa_status === "connected" && outlet.wa_number;
     return (
       <section className="card stack">
-        <h2>PC outlet belum menyala</h2>
-        <p>Nyalakan PC outlet. Aplikasi WA Blast di PC akan jalan sendiri, lalu kode QR muncul di sini.</p>
+        <div className="card-head">
+          <h2>Status WhatsApp</h2>
+          <p>PC outlet sedang mati, jadi status di bawah adalah keadaan terakhir sebelum PC mati.</p>
+        </div>
+        <ul className="checks">
+          <li>
+            PC outlet <b className="no">Mati</b>
+          </li>
+          <li>
+            WhatsApp{" "}
+            <b className={linked ? "yes" : "no"}>{linked ? `Tersambung, +${outlet.wa_number}` : "Belum tersambung"}</b>
+          </li>
+        </ul>
+        <p className="hint">
+          {linked
+            ? "Nyalakan PC outlet. WA Blast jalan sendiri dan langsung memakai nomor ini, tidak perlu scan ulang."
+            : "Nyalakan PC outlet. WA Blast jalan sendiri, lalu kode QR untuk menyambungkan muncul di sini."}
+        </p>
       </section>
     );
   }

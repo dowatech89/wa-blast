@@ -604,6 +604,7 @@ button.sign-out {
   text-align: center;
 }
 .tab-icon {
+  position: relative; /* anchors the WhatsApp status dot */
   display: grid;
   place-items: center;
   width: 52px;
@@ -1149,4 +1150,78 @@ label .search > input {
 }
 .toast .icon {
   color: var(--side-text);
+}
+
+/* Promo form: fields left, live phone preview right (stacked on phones). */
+.promo-editor {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .promo-editor {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+  .promo-editor .phone {
+    position: sticky;
+    top: var(--space-5);
+  }
+}
+.phone {
+  justify-self: center;
+  width: min(320px, 100%);
+  max-width: none;
+  border: 8px solid var(--text);
+  border-radius: 30px;
+}
+.phone .chat-body {
+  min-height: 280px;
+}
+.chat-placeholder {
+  color: #54656f;
+  font-style: italic;
+}
+
+/* Green or red dot on the WhatsApp menu item: link state visible from every page. */
+.nav-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+.nav-dot.on {
+  background: #1f9d55;
+}
+.nav-dot.off {
+  background: var(--danger);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+button.sign-out-bottom {
+  display: none; /* phones keep Keluar in the header */
+}
+@media (min-width: 900px) {
+  .nav-dot {
+    top: -3px;
+    right: -4px;
+    border-color: var(--brand-text); /* white ring: the dot alone barely shows on teal */
+  }
+  .side button.sign-out-top {
+    display: none;
+  }
+  .side button.sign-out-bottom {
+    display: inline-flex;
+    order: 9; /* the phone `order` values still apply inside the sidebar: keep this one last */
+    margin-top: auto;
+    align-self: flex-start;
+  }
 }

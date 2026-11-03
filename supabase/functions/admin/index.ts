@@ -83,8 +83,8 @@ Deno.serve(async (req) => {
         daily_limit: 50,
         delay_min_sec: 30,
         delay_max_sec: 90,
-        send_start: "09:00",
-        send_end: "20:00",
+        send_start: "10:00",
+        send_end: "18:00",
         timezone: "Asia/Jakarta",
       });
       if (error) {

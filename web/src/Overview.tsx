@@ -178,7 +178,7 @@ export function Overview({ outlet }: { outlet: Outlet }) {
         <p className="tile-label">Kontak aktif</p>
         <p className="metric">{counts?.contacts ?? "–"}</p>
         <a className="tile-link" href="#kontak">
-          Lihat kontak
+          Daftar kontak
         </a>
       </article>
     </section>

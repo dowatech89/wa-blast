@@ -9,7 +9,7 @@ import { LOGIN_OUTLETS, toEmail } from "./login";
 import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
-import { db, type Outlet } from "./supabase";
+import { db, isPcOnline, type Outlet } from "./supabase";
 import { Toaster } from "./toast";
 
 const POLL_MS = 4000;
@@ -247,7 +247,11 @@ function Dashboard() {
   return (
     <Frame
       title={outlet.name}
-      nav={TABS.filter((t) => t.id !== "admin" || isSupervisor).map((t) => ({ ...t, current: shown === t.id }))}
+      nav={TABS.filter((t) => t.id !== "admin" || isSupervisor).map((t) => ({
+        ...t,
+        current: shown === t.id,
+        status: t.id === "wa" ? waStatus(outlet) : undefined,
+      }))}
     >
       {outlets.length > 1 && (
         <div className="outlet-pick">
@@ -303,7 +307,8 @@ function Dashboard() {
   );
 }
 
-type NavItem = { id: IconName; label: string; current: boolean };
+// `status` puts a green or red dot on the item (the WhatsApp link), so the state shows from any page.
+type NavItem = { id: IconName; label: string; current: boolean; status?: { ok: boolean; text: string } };
 
 /** Phone: header, then the page, with the menu as icon tiles above the working area (CSS reorders).
  *  Desktop (900px+): a teal sidebar holds the header and the menu; the page fills the right column. */
@@ -319,23 +324,40 @@ function Frame({ title, nav, children }: { title: string; nav: NavItem[]; childr
             </p>
             <h1>{title}</h1>
           </div>
-          <button type="button" className="link sign-out" onClick={() => db.auth.signOut()}>
-            <Icon name="keluar" />
-            Keluar
-          </button>
+          <SignOut place="top" />
         </header>
         <nav className="tabs" aria-label="Menu">
           {nav.map((t) => (
             <a key={t.id} href={`#${t.id}`} aria-current={t.current ? "page" : undefined}>
               <span className="tab-icon">
                 <Icon name={t.id} />
+                {t.status && <span className={`nav-dot ${t.status.ok ? "on" : "off"}`} />}
               </span>
               {t.label}
+              {t.status && <span className="sr-only">({t.status.text})</span>}
             </a>
           ))}
         </nav>
+        <SignOut place="bottom" />
       </aside>
       <div className="content">{children}</div>
     </div>
   );
+}
+
+/** Phone: in the header, next to the outlet name. Desktop: at the bottom of the sidebar. CSS shows one of them. */
+function SignOut({ place }: { place: "top" | "bottom" }) {
+  return (
+    <button type="button" className={`link sign-out sign-out-${place}`} onClick={() => db.auth.signOut()}>
+      <Icon name="keluar" />
+      Keluar
+    </button>
+  );
+}
+
+function waStatus(outlet: Outlet) {
+  if (outlet.wa_status !== "connected") return { ok: false, text: "WhatsApp belum tersambung" };
+  return isPcOnline(outlet)
+    ? { ok: true, text: "WhatsApp tersambung" }
+    : { ok: false, text: "WhatsApp tersambung, PC outlet mati" };
 }

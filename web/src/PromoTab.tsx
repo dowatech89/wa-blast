@@ -144,50 +144,50 @@ function PromoForm({
   }
 
   const form = (
-    <form key={formKey} onSubmit={submit} className="stack">
-      <label>
-        Nama promo <span className="muted">(hanya untuk kamu, tidak ikut dikirim)</span>
-        <input required maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
-      </label>
-      <label>
-        {campaign ? "Ganti foto" : "Foto promo"}{" "}
-        <span className="muted">{campaign ? "(kosongkan kalau fotonya tetap)" : "(boleh dikosongkan)"}</span>
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        />
-      </label>
-      <label>
-        Pesan
-        <textarea required rows={5} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
-      </label>
-      <p className="hint">
-        Tulis <code>{"{nama}"}</code> untuk nama pelanggan dan <code>{"{outlet}"}</code> untuk nama outlet. Contoh: Halo{" "}
-        {"{nama}"}, ini dari {"{outlet}"}, ada promo hari ini.
-      </p>
-      {(message.trim() || preview || currentImage) && (
-        <ChatPreview
-          sender={outlet.sender_name || outlet.name}
-          image={preview ?? currentImage ?? null}
-          text={message.trim() ? composeCaption(message, "Budi", outlet.optout_footer, outlet.name) : ""}
-        />
-      )}
-      {error && (
-        <p className="error" role="alert">
-          {error}
+    <form key={formKey} onSubmit={submit} className="promo-editor">
+      <div className="stack">
+        <label>
+          Nama promo <span className="muted">(hanya untuk kamu, tidak ikut dikirim)</span>
+          <input required maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label>
+          {campaign ? "Ganti foto" : "Foto promo"}{" "}
+          <span className="muted">{campaign ? "(kosongkan kalau fotonya tetap)" : "(boleh dikosongkan)"}</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
+        </label>
+        <label>
+          Pesan
+          <textarea required rows={5} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
+        </label>
+        <p className="hint">
+          Tulis <code>{"{nama}"}</code> untuk nama pelanggan dan <code>{"{outlet}"}</code> untuk nama outlet. Contoh:
+          Halo {"{nama}"}, ini dari {"{outlet}"}, ada promo hari ini.
         </p>
-      )}
-      <div className="row">
-        <button type="submit" className="primary" disabled={busy}>
-          {busy ? "Menyimpan..." : campaign ? "Simpan perubahan" : "Simpan promo"}
-        </button>
-        {onCancel && (
-          <button type="button" className="secondary" onClick={onCancel} disabled={busy}>
-            Batal
-          </button>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
         )}
+        <div className="row">
+          <button type="submit" className="primary" disabled={busy}>
+            {busy ? "Menyimpan..." : campaign ? "Simpan perubahan" : "Simpan promo"}
+          </button>
+          {onCancel && (
+            <button type="button" className="secondary" onClick={onCancel} disabled={busy}>
+              Batal
+            </button>
+          )}
+        </div>
       </div>
+      <ChatPreview
+        sender={outlet.sender_name || outlet.name}
+        image={preview ?? currentImage ?? null}
+        text={message.trim() ? composeCaption(message, "Budi", outlet.optout_footer, outlet.name) : ""}
+      />
     </form>
   );
 
@@ -245,6 +245,23 @@ function PromoCard({
     if (isConflict(error)) setError("Promo ini baru diubah dari HP lain. Lihat status terbaru, lalu coba lagi.");
     else if (error) setError("Gagal mengubah promo. Coba lagi.");
     onChanged();
+  }
+
+  // A sent promo cannot change (customers already have it), so offer a copy that starts as an editable draft.
+  async function reuse() {
+    setBusy(true);
+    const { error } = await db.from("campaigns").insert({
+      outlet_id: outlet.id,
+      title: `${campaign.title} (salinan)`.slice(0, 80),
+      message: campaign.message,
+      image_path: campaign.image_path,
+    });
+    setBusy(false);
+    if (error) setError("Gagal menyalin promo. Coba lagi.");
+    else {
+      toast("Salinan dibuat di atas. Tekan Ubah promo untuk mengganti isinya.");
+      onChanged();
+    }
   }
 
   async function showProblems() {
@@ -359,6 +376,11 @@ function PromoCard({
             Ubah promo
           </button>
         )}
+        {campaign.status === "done" && (
+          <button type="button" className="secondary" onClick={reuse} disabled={busy}>
+            Pakai lagi (salin & ubah)
+          </button>
+        )}
         {p && p.failed + p.skipped > 0 && (
           <button type="button" className="secondary" onClick={showProblems} aria-expanded={failed !== null}>
             {failed ? "Tutup daftar" : `Lihat yang gagal atau dilewati (${p.failed + p.skipped})`}
@@ -382,10 +404,11 @@ function PromoCard({
   );
 }
 
-/** What a customer named Budi sees: the outlet's profile name on top, the photo and caption in an outgoing bubble. */
+/** What a customer named Budi sees, in a phone frame: the outlet's profile name on top, then the photo and caption
+ *  in an outgoing bubble. Always shown, so the captain sees the result while typing. */
 function ChatPreview({ sender, image, text }: { sender: string; image: string | null; text: string }) {
   return (
-    <figure className="chat">
+    <figure className="chat phone">
       <figcaption className="chat-head">
         <span className="avatar" aria-hidden="true">
           {initials(sender)}
@@ -398,7 +421,11 @@ function ChatPreview({ sender, image, text }: { sender: string; image: string | 
       <div className="chat-body">
         <div className="chat-bubble">
           {image && <img src={image} alt="Foto promo yang dipilih" />}
-          {text && <p>{text}</p>}
+          {text ? (
+            <p>{text}</p>
+          ) : (
+            <p className="chat-placeholder">Tulis pesan di form, contohnya langsung muncul di sini.</p>
+          )}
           <span className="chat-time" aria-hidden="true">
             10.30 ✓✓
           </span>
