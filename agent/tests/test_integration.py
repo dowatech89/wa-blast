@@ -413,6 +413,17 @@ def test_promo_text_and_photo_change_only_while_draft_or_paused(db, outlet, runn
     )
 
 
+def test_send_delay_is_locked_and_sender_name_is_the_captains(db, outlet):
+    with pytest.raises(APIError, match="permission denied"):
+        db.table("outlets").update({"delay_min_sec": 5}).eq("id", outlet["id"]).execute()
+    db.table("outlets").update({"sender_name": "Sunset Grill Bali"}).eq("id", outlet["id"]).execute()
+    row = db.table("outlets").select("sender_name, delay_min_sec").eq("id", outlet["id"]).single().execute().data
+    assert row["sender_name"] == "Sunset Grill Bali"
+    with pytest.raises(APIError, match="check"):  # WhatsApp caps profile names at 25 characters
+        db.table("outlets").update({"sender_name": "x" * 26}).eq("id", outlet["id"]).execute()
+    db.table("outlets").update({"sender_name": None}).eq("id", outlet["id"]).execute()
+
+
 def test_session_is_refreshed_well_before_expiry(stack, outlet, tmp_path, monkeypatch):
     client = session.connect(
         stack["url"], stack["anon"], tmp_path / "s.json", credentials=lambda _e: (outlet["email"], outlet["password"])

@@ -54,6 +54,7 @@ def test_caption_adds_name_and_optout_footer():
 
     assert compose_caption("Halo {nama}!", "Budi", "Balas STOP.") == "Halo Budi!\n\nBalas STOP."
     assert compose_caption("Halo {nama}!", None, "") == "Halo Kak!"
+    assert compose_caption("Halo {nama}, ini {outlet}.", "Sari", "", "Sunset Grill") == "Halo Sari, ini Sunset Grill."
 
 
 def test_username_maps_to_account_email():
@@ -85,3 +86,40 @@ def test_second_wablast_on_the_same_pc_is_refused():
             import ctypes
 
             ctypes.windll.kernel32.CloseHandle(first)
+
+
+class _Chain:
+    """Stands in for the Supabase client: every call returns itself, so db.table(...).update(...).execute() works."""
+
+    def __getattr__(self, _name):
+        return lambda *_a, **_k: self
+
+
+def test_sender_name_is_set_once_per_change_and_skipped_before_migration():
+    from wablast.worker import Agent
+
+    calls: list[str] = []
+    gowa = type("FakeGowa", (), {"set_push_name": lambda _self, name: calls.append(name)})()
+    outlet = {"id": "o1", "name": "Sunset Grill", "sender_name": None, "sender_name_applied": None}
+    agent = Agent(_Chain(), gowa, outlet, 60)  # type: ignore[arg-type]
+
+    agent._sync_sender_name()
+    agent._sync_sender_name()
+    assert calls == ["Sunset Grill"]  # outlet name by default, applied once
+
+    agent.outlet["sender_name"] = "Sunset Grill Bali Seminyak Beach"  # longer than WhatsApp allows
+    agent._sync_sender_name()
+    assert calls[-1] == "Sunset Grill Bali Seminyak"[:25] and len(calls[-1]) == 25
+
+    def refuse(_self, _name):
+        from wablast.gowa import GowaError
+
+        raise GowaError("push name refused")
+
+    stubborn = Agent(_Chain(), type("G", (), {"set_push_name": refuse})(), dict(outlet, sender_name=None), 60)  # type: ignore[arg-type]
+    stubborn._sync_sender_name()  # GOWA refuses: logged, no exception, so the tick still sends
+    assert stubborn.push_name_failed == "Sunset Grill"
+
+    before = Agent(_Chain(), gowa, {"id": "o2", "name": "Rooms"}, 60)  # type: ignore[arg-type]
+    before._sync_sender_name()  # columns missing: sending must not break, nothing is set
+    assert len(calls) == 2

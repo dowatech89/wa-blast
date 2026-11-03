@@ -66,6 +66,12 @@ Numbers in the overview use tabular figures.
 - Status pill: dot + text, only for real states (running, PC on/off, WhatsApp linked).
 - Card header: title 20px/700 plus optional one-line description in muted.
 - Empty states say why it is empty and the one action that fills it.
+- Logo: chat bubble on a rounded teal tile (white tile on teal surfaces); the same mark is the favicon.
+- Avatar: 40px circle with initials on `--brand-soft`, for contacts and outlet cards.
+- Message preview: a WhatsApp-like chat (light header with "~sender name", beige wallpaper, green outgoing bubble
+  with photo, caption and time) so captains see exactly what a customer receives.
+- Toast: dark pill at the bottom for "saved" confirmations only; errors stay inline next to what failed.
+- Running promo in the overview: a progress ring with the percentage inside.
 
 ## Accessibility
 WCAG AA contrast for all text, 3px blue focus ring (`#1d4ed8`) on every focusable element, 44px+ targets,

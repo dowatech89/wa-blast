@@ -88,6 +88,11 @@ a {
   color: var(--brand);
 }
 
+.icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -164,8 +169,57 @@ a {
 .login {
   min-height: 100dvh;
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-content: center;
+  justify-items: center;
+  gap: var(--space-4);
   padding: var(--space-4);
+}
+.login-hero {
+  width: min(400px, 100%);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  background: var(--brand);
+  color: var(--brand-text);
+}
+.login-hero h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.login-hero ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  color: var(--side-text);
+  font-size: 0.95rem;
+}
+.login-hero li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+@media (min-width: 860px) {
+  .login {
+    grid-template-columns: minmax(0, 440px) minmax(0, 400px);
+    align-items: stretch;
+    gap: var(--space-5);
+  }
+  .login-hero {
+    width: auto;
+    align-content: center;
+    padding: var(--space-6);
+  }
+  .login-hero h2 {
+    font-size: 1.75rem;
+  }
+  .login-card {
+    align-content: center;
+  }
 }
 .login-card {
   width: min(400px, 100%);
@@ -178,11 +232,34 @@ a {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-weight: 800;
   font-size: 1.75rem;
   letter-spacing: -0.02em;
   color: var(--brand);
 }
+/* Logo: teal tile with a white bubble; inverted (white tile) wherever it sits on teal. */
+.logo {
+  flex: none;
+}
+.logo rect {
+  fill: var(--brand);
+}
+.logo path {
+  stroke: var(--brand-text);
+}
+.login-hero .brand {
+  color: var(--brand-text);
+}
+.login-hero .logo rect {
+  fill: var(--brand-text);
+}
+.login-hero .logo path {
+  stroke: var(--brand);
+}
+
 .brand.small {
   font-size: 0.95rem;
   letter-spacing: 0;
@@ -222,6 +299,12 @@ button.sign-out {
   .side .brand,
   .side button.sign-out {
     color: var(--side-text);
+  }
+  .side .logo rect {
+    fill: var(--brand-text);
+  }
+  .side .logo path {
+    stroke: var(--brand);
   }
   .side button.sign-out {
     padding-inline: 0;
@@ -362,10 +445,57 @@ button.sign-out {
   border-color: var(--danger-border);
 }
 .verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.015em;
   line-height: 1.25;
+}
+.verdict .icon {
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+}
+
+/* Running promo progress ring (overview). */
+.ring-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.ring {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  flex: none;
+}
+.ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.ring circle {
+  fill: none;
+  stroke-width: 7;
+}
+.ring-track {
+  stroke: var(--border);
+}
+.ring-fill {
+  stroke: var(--brand);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease;
+}
+.ring span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
 }
 .blocked .verdict {
   color: var(--danger);
@@ -482,11 +612,6 @@ button.sign-out {
   background: var(--surface);
   color: var(--brand);
   box-shadow: var(--shadow);
-}
-.icon {
-  width: 22px;
-  height: 22px;
-  flex: none;
 }
 .tabs a:hover {
   color: var(--text);
@@ -625,11 +750,11 @@ button.outlet-card.blocked {
 }
 .outlet-card-head {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-2);
+  align-items: center;
+  gap: var(--space-3);
 }
 .outlet-card-name {
+  flex: 1;
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -741,13 +866,6 @@ button.big {
   object-fit: cover;
   border-radius: var(--radius-sm);
   flex: none;
-}
-.thumb-lg {
-  max-height: 220px;
-  width: auto;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  justify-self: start;
 }
 .message-preview {
   white-space: pre-wrap;
@@ -872,6 +990,7 @@ button.big {
 
 @media (prefers-reduced-motion: reduce) {
   .bar span,
+  .ring-fill,
   button {
     transition: none;
   }
@@ -895,17 +1014,6 @@ button.big {
   flex: 1 1 240px;
 }
 
-/* Message preview shaped like a chat bubble so captains read it as "what the customer sees". */
-.bubble {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: var(--brand-soft);
-  color: var(--brand-ink);
-  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 4px;
-  padding: 10px 14px;
-  max-width: 420px;
-}
-
 label.check {
   display: flex;
   align-items: center;
@@ -918,4 +1026,127 @@ label.check input {
   height: 22px;
   min-height: 0;
   accent-color: var(--brand);
+}
+
+/* ---------- Avatars, search ---------- */
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.ready .avatar {
+  background: var(--surface);
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.search {
+  position: relative;
+  display: block;
+}
+.search .icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+label .search > input {
+  padding-left: 46px;
+}
+
+/* ---------- WhatsApp chat preview: the message exactly as Budi receives it ---------- */
+.chat {
+  margin: 0;
+  max-width: 440px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px var(--space-3);
+  background: #f0f2f5;
+}
+.chat-head b {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.chat .chat-head small {
+  color: #54656f;
+  font-size: 0.8rem;
+}
+.chat-body {
+  padding: var(--space-4) var(--space-3);
+  background: #efeae2;
+}
+.chat-bubble {
+  margin-left: auto;
+  max-width: 88%;
+  width: fit-content;
+  padding: 6px;
+  border-radius: 10px 10px 2px 10px;
+  background: #d9fdd3;
+  color: #111b21;
+  box-shadow: 0 1px 1px rgb(11 20 26 / 0.13);
+}
+.chat-bubble img {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.chat-bubble p {
+  padding: 4px 6px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+.chat-time {
+  display: block;
+  padding: 0 6px 2px;
+  text-align: right;
+  font-size: 0.72rem;
+  color: #54656f;
+}
+
+/* ---------- Toast ---------- */
+.toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-4);
+  transform: translateX(-50%);
+  z-index: 50;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  box-shadow: var(--shadow);
+}
+.toast .icon {
+  color: var(--side-text);
 }

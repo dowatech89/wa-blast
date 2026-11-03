@@ -1,6 +1,8 @@
 import { useCallback, useState } from "react";
 import { usePoll } from "./App";
 import { type ParseResult, parseContactRows } from "./contacts";
+import { Icon } from "./icons";
+import { initials } from "./initials";
 import { db, type Outlet } from "./supabase";
 
 const PAGE = 50;
@@ -87,7 +89,10 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
         )}
         <label>
           Cari nama atau nomor
-          <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <span className="search">
+            <Icon name="cari" />
+            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </span>
         </label>
         {error && <p className="error">{error}</p>}
         {rows === null && !error && <p className="muted">Memuat kontak...</p>}
@@ -100,10 +105,15 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
           <ul className="list">
             {rows.map((r) => (
               <li key={r.id}>
-                <span>
-                  {r.name || "Tanpa nama"} <span className="muted">{r.phone}</span>
-                  {r.opted_out && <span className="badge done">Minta berhenti</span>}
-                  {r.not_on_whatsapp && <span className="badge done">Tidak punya WhatsApp</span>}
+                <span className="person">
+                  <span className="avatar" aria-hidden="true">
+                    {initials(r.name)}
+                  </span>
+                  <span>
+                    {r.name || "Tanpa nama"} <span className="muted">{r.phone}</span>
+                    {r.opted_out && <span className="badge done">Minta berhenti</span>}
+                    {r.not_on_whatsapp && <span className="badge done">Tidak punya WhatsApp</span>}
+                  </span>
                 </span>
                 <span className="row-actions">
                   {r.opted_out && isSupervisor && (

@@ -36,6 +36,9 @@ export type Outlet = {
   warmup_daily_increase: number;
   wa_connected_since: string | null;
   pause_reason: string | null;
+  // Profile name shown as "~Name" (20261103010000_sender_name.sql); undefined until that migration runs.
+  sender_name?: string | null;
+  sender_name_applied?: string | null;
 };
 
 export type Campaign = {

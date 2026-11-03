@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { usePoll } from "./App";
+import { initials } from "./initials";
 import { db, isPcOnline, type Outlet } from "./supabase";
 
 type Summary = { outlet_id: string; sent_today: number; today_limit: number; running_promos: number };
@@ -37,6 +38,9 @@ export function AllOutlets({ outlets, onOpen }: { outlets: Outlet[]; onOpen: (id
                 onClick={() => onOpen(o.id)}
               >
                 <span className="outlet-card-head">
+                  <span className="avatar" aria-hidden="true">
+                    {initials(o.name)}
+                  </span>
                   <span className="outlet-card-name">{o.name}</span>
                   <span className="open-arrow" aria-hidden="true">
                     →

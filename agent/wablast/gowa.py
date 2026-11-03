@@ -50,6 +50,9 @@ class Gowa:
     def logout(self) -> None:
         self._call("POST", f"/devices/{self.device_id}/logout")
 
+    def set_push_name(self, name: str) -> None:
+        self._call("POST", "/user/pushname", json={"push_name": name})
+
     def is_on_whatsapp(self, phone: str) -> bool:
         return bool(self._call("GET", "/user/check", params={"phone": phone}).get("is_on_whatsapp"))
 

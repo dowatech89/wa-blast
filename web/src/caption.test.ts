@@ -5,4 +5,5 @@ import { composeCaption } from "./caption";
 it("adds the name and the opt-out footer", () => {
   expect(composeCaption("Halo {nama}!", "Budi", "Balas STOP.")).toBe("Halo Budi!\n\nBalas STOP.");
   expect(composeCaption("Halo {nama}!", null, "")).toBe("Halo Kak!");
+  expect(composeCaption("Halo {nama}, ini {outlet}.", "Sari", "", "Sunset Grill")).toBe("Halo Sari, ini Sunset Grill.");
 });

@@ -36,6 +36,24 @@ const PATHS = {
       <path d="m16 17 5-5-5-5M21 12H9" />
     </>
   ),
+  siap: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m9 12 2 2 4-4" />
+    </>
+  ),
+  awas: (
+    <>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v4M12 16h.01" />
+    </>
+  ),
+  cari: (
+    <>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </>
+  ),
 };
 
 export type IconName = keyof typeof PATHS;
@@ -54,6 +72,17 @@ export function Icon({ name }: { name: IconName }) {
       aria-hidden="true"
     >
       {PATHS[name]}
+    </svg>
+  );
+}
+
+/** WA Blast mark: a chat bubble on a rounded tile. Colours come from CSS (.logo) so it works on teal and grey. */
+export function Logo({ size = 28 }: { size?: number }) {
+  return (
+    <svg className="logo" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" rx="9" />
+      <path d="M11.2 23.4A8 8 0 1 0 8.6 20.8L7.5 24.5Z" fill="none" strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M12.5 13.5h7M12.5 17h4.5" fill="none" strokeWidth="2.2" strokeLinecap="round" />
     </svg>
   );
 }

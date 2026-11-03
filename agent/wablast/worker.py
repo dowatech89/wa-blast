@@ -18,14 +18,15 @@ Row = dict[str, Any]
 QR_BUCKET = "qr-codes"
 IMAGE_BUCKET = "campaign-images"
 DISCONNECT_REASON = "WhatsApp terputus. Scan ulang kode QR di menu WhatsApp, lalu nyalakan lagi promonya."
+PUSH_NAME_MAX = 25  # WhatsApp's own limit for a profile name
 
 
 def now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def compose_caption(message: str, name: str | None, footer: str) -> str:
-    text = message.replace("{nama}", (name or "").strip() or "Kak")
+def compose_caption(message: str, name: str | None, footer: str, outlet: str = "") -> str:
+    text = message.replace("{nama}", (name or "").strip() or "Kak").replace("{outlet}", outlet.strip())
     return f"{text}\n\n{footer.strip()}" if footer.strip() else text
 
 
@@ -40,6 +41,7 @@ class Agent:
         self.was_connected = outlet.get("wa_status") == "connected"
         # Last linked number; survives a relogin so relinking the same phone keeps its warm-up progress.
         self.last_number: str | None = outlet.get("wa_number")
+        self.push_name_failed: str | None = None
 
     @property
     def outlet_id(self) -> str:
@@ -72,7 +74,28 @@ class Agent:
             return "waiting_qr"
         self.was_connected = True
         self._update_outlet(wa_status="connected", qr_image_path=None, **self._wa_number())
+        self._sync_sender_name()
         return self._send_one()
+
+    def _sync_sender_name(self) -> None:
+        """Profile name people see as "~Name" when they have not saved the number: sender_name, else the outlet name.
+
+        Applied once per change, so a name edited on the phone stays until the dashboard changes it again.
+        """
+        if "sender_name_applied" not in self.outlet:
+            return  # database not migrated yet (20261103010000_sender_name.sql): keep sending, skip the name
+        wanted = (self.outlet.get("sender_name") or self.outlet["name"]).strip()[:PUSH_NAME_MAX]
+        if not wanted or wanted in (self.outlet.get("sender_name_applied"), self.push_name_failed):
+            return
+        try:
+            self.gowa.set_push_name(wanted)
+        except GowaError:
+            # Never let the profile name hold up sending; retried after the next change or restart.
+            self.push_name_failed = wanted
+            log.exception("WhatsApp profile name not updated")
+            return
+        self._update_outlet(sender_name_applied=wanted)
+        log.info("WhatsApp profile name updated")
 
     def _update_outlet(self, **fields) -> None:
         fields["last_seen_at"] = now_iso()
@@ -87,6 +110,8 @@ class Agent:
         fields: dict = {"wa_number": number}
         if number and number != self.last_number:
             self.db.rpc("mark_number_linked", {"p_outlet_id": self.outlet_id}).execute()  # warm-up restarts
+            if "sender_name_applied" in self.outlet:
+                fields["sender_name_applied"] = None  # a new phone gets the outlet's sender name too
         self.last_number = number or self.last_number
         return fields
 
@@ -140,7 +165,9 @@ class Agent:
                     image_url = signed["signedURL"]
                     if not image_url:
                         raise StorageApiError("gambar promo tidak ditemukan", "NotFound", 404)
-                caption = compose_caption(m["message"], m["contact_name"], self.outlet.get("optout_footer") or "")
+                caption = compose_caption(
+                    m["message"], m["contact_name"], self.outlet.get("optout_footer") or "", self.outlet["name"]
+                )
                 self.gowa.send(m["phone"], caption, image_url)
         except (GowaError, StorageApiError, httpx.HTTPError) as exc:
             result, error = "failed", str(exc)[:500]

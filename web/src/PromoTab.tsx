@@ -1,7 +1,9 @@
 import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { usePoll } from "./App";
 import { composeCaption } from "./caption";
+import { initials } from "./initials";
 import { type Campaign, db, IMAGE_BUCKET, isConflict, isPcOnline, type Outlet, type Progress } from "./supabase";
+import { toast } from "./toast";
 
 const STATUS_TEXT: Record<Campaign["status"], string> = {
   draft: "Belum dikirim",
@@ -123,6 +125,7 @@ function PromoForm({
         );
         return;
       }
+      toast("Perubahan promo tersimpan");
       onDone();
       return;
     }
@@ -136,6 +139,7 @@ function PromoForm({
     setMessage("");
     setFile(null);
     setFormKey((k) => k + 1); // clears the file input
+    toast("Promo tersimpan. Tekan NYALAKAN untuk mulai kirim.");
     onDone();
   }
 
@@ -154,21 +158,20 @@ function PromoForm({
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
       </label>
-      {(preview ?? currentImage) && (
-        <img src={preview ?? currentImage ?? ""} alt="Foto promo yang dipilih" className="thumb-lg" />
-      )}
       <label>
         Pesan
         <textarea required rows={5} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
       </label>
       <p className="hint">
-        Tulis <code>{"{nama}"}</code> untuk memanggil nama pelanggan. Contoh: Halo {"{nama}"}, ada promo hari ini.
+        Tulis <code>{"{nama}"}</code> untuk nama pelanggan dan <code>{"{outlet}"}</code> untuk nama outlet. Contoh: Halo{" "}
+        {"{nama}"}, ini dari {"{outlet}"}, ada promo hari ini.
       </p>
-      {message.trim() && (
-        <div className="hint stack-sm">
-          <span>Contoh pesan yang diterima pelanggan bernama Budi:</span>
-          <p className="bubble">{composeCaption(message, "Budi", outlet.optout_footer)}</p>
-        </div>
+      {(message.trim() || preview || currentImage) && (
+        <ChatPreview
+          sender={outlet.sender_name || outlet.name}
+          image={preview ?? currentImage ?? null}
+          text={message.trim() ? composeCaption(message, "Budi", outlet.optout_footer, outlet.name) : ""}
+        />
       )}
       {error && (
         <p className="error" role="alert">
@@ -376,5 +379,31 @@ function PromoCard({
         </ul>
       )}
     </article>
+  );
+}
+
+/** What a customer named Budi sees: the outlet's profile name on top, the photo and caption in an outgoing bubble. */
+function ChatPreview({ sender, image, text }: { sender: string; image: string | null; text: string }) {
+  return (
+    <figure className="chat">
+      <figcaption className="chat-head">
+        <span className="avatar" aria-hidden="true">
+          {initials(sender)}
+        </span>
+        <span>
+          <b>~{sender}</b>
+          <small>Contoh yang diterima pelanggan bernama Budi</small>
+        </span>
+      </figcaption>
+      <div className="chat-body">
+        <div className="chat-bubble">
+          {image && <img src={image} alt="Foto promo yang dipilih" />}
+          {text && <p>{text}</p>}
+          <span className="chat-time" aria-hidden="true">
+            10.30 ✓✓
+          </span>
+        </div>
+      </div>
+    </figure>
   );
 }

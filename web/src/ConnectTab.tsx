@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { db, isPcOnline, type Outlet, QR_BUCKET } from "./supabase";
+import { toast } from "./toast";
 
 export function ConnectTab({ outlet }: { outlet: Outlet }) {
   const [qrUrl, setQrUrl] = useState<string | null>(null);
@@ -38,16 +39,19 @@ export function ConnectTab({ outlet }: { outlet: Outlet }) {
 
   if (outlet.wa_status === "connected") {
     return (
-      <section className="card stack">
-        <h2>WhatsApp sudah tersambung</h2>
-        <p>
-          Nomor pengirim: <strong>{outlet.wa_number ? `+${outlet.wa_number}` : "sedang dibaca..."}</strong>
-        </p>
-        {error && <p className="error">{error}</p>}
-        <button type="button" className="secondary" onClick={changeNumber} disabled={busy}>
-          Ganti nomor
-        </button>
-      </section>
+      <div className="stack-lg">
+        <section className="card stack">
+          <h2>WhatsApp sudah tersambung</h2>
+          <p>
+            Nomor pengirim: <strong>{outlet.wa_number ? `+${outlet.wa_number}` : "sedang dibaca..."}</strong>
+          </p>
+          {error && <p className="error">{error}</p>}
+          <button type="button" className="secondary" onClick={changeNumber} disabled={busy}>
+            Ganti nomor
+          </button>
+        </section>
+        <SenderName outlet={outlet} />
+      </div>
     );
   }
 
@@ -76,6 +80,64 @@ export function ConnectTab({ outlet }: { outlet: Outlet }) {
       </div>
       <p className="hint">Kode berganti sendiri setiap 30 detik. Kalau gagal, scan saja kode yang baru.</p>
       {error && <p className="error">{error}</p>}
+    </section>
+  );
+}
+
+const PUSH_NAME_MAX = 25; // WhatsApp's limit, same as agent/wablast/worker.py
+
+/** The "~Name" people see when they have not saved the number. The PC applies it through GOWA. */
+function SenderName({ outlet }: { outlet: Outlet }) {
+  const wanted = (outlet.sender_name || outlet.name).slice(0, PUSH_NAME_MAX);
+  const [name, setName] = useState(wanted);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const migrated = outlet.sender_name_applied !== undefined;
+  const applied = outlet.sender_name_applied === wanted;
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const trimmed = name.trim();
+    // Empty or the outlet name itself = follow the outlet name.
+    const value = trimmed && trimmed !== outlet.name ? trimmed : null;
+    const { error } = await db.from("outlets").update({ sender_name: value }).eq("id", outlet.id);
+    setBusy(false);
+    if (error) setMessage({ ok: false, text: "Gagal menyimpan. Coba lagi." });
+    else {
+      setMessage(null);
+      toast("Nama tersimpan. PC outlet memasangnya dalam beberapa detik.");
+    }
+  }
+
+  return (
+    <section className="card stack">
+      <div className="card-head">
+        <h2>Nama pengirim</h2>
+        <p>Nama yang dilihat pelanggan yang belum menyimpan nomor ini, misalnya +62 812... ~{wanted}.</p>
+      </div>
+      {migrated ? (
+        <form onSubmit={save} className="stack">
+          <label>
+            Nama di WhatsApp
+            <input required maxLength={PUSH_NAME_MAX} value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <p className="hint">
+            {applied ? "Sudah terpasang di WhatsApp." : "Menunggu PC outlet memasangnya..."} Logo dan foto profil tetap
+            diatur dari HP: Setelan, Privasi, Foto profil, pilih Semua orang.
+          </p>
+          {message && (
+            <p className={message.ok ? "ok" : "error"} role="status">
+              {message.text}
+            </p>
+          )}
+          <button type="submit" className="primary" disabled={busy || !name.trim()}>
+            {busy ? "Menyimpan..." : "Simpan nama"}
+          </button>
+        </form>
+      ) : (
+        <p className="hint">Fitur ini aktif setelah admin menjalankan pembaruan database (sender_name).</p>
+      )}
     </section>
   );
 }

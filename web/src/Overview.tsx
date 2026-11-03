@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { usePoll } from "./App";
+import { Icon } from "./icons";
 import { type Campaign, db, isPcOnline, type Outlet, type Progress } from "./supabase";
 
 type Counts = {
@@ -97,7 +98,10 @@ export function Overview({ outlet }: { outlet: Outlet }) {
     <section className="bento" aria-label="Ringkasan">
       <article className={`tile tile-verdict ${ready ? "ready" : "blocked"}`} aria-live="polite">
         <p className="tile-label">Siap kirim?</p>
-        <p className="verdict">{verdict}</p>
+        <p className="verdict">
+          <Icon name={ready ? "siap" : "awas"} />
+          {verdict}
+        </p>
         <ul className="checks">
           <li>
             PC outlet <b className={pcOn ? "yes" : "no"}>{pcOn ? "Menyala" : "Mati"}</b>
@@ -135,31 +139,22 @@ export function Overview({ outlet }: { outlet: Outlet }) {
       <article className="tile tile-promo">
         <p className="tile-label">Promo berjalan</p>
         {counts?.running ? (
-          <>
-            <div className="section-title">
+          <div className="ring-row">
+            <Ring percent={percent} />
+            <div className="stack-sm">
               <h3>{counts.running.title}</h3>
-              {counts.runningCount > 1 && <span className="hint">+{counts.runningCount - 1} lainnya</span>}
+              <p className="hint">
+                {p ? (
+                  <>
+                    <b>{p.sent}</b> terkirim dari {p.total} kontak, {p.waiting} menunggu
+                  </>
+                ) : (
+                  "Menyiapkan antrean..."
+                )}
+              </p>
+              {counts.runningCount > 1 && <span className="hint">+{counts.runningCount - 1} promo lain berjalan</span>}
             </div>
-            <div
-              className="bar"
-              role="progressbar"
-              aria-valuenow={percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Progres promo berjalan"
-            >
-              <span style={{ width: `${percent}%` }} />
-            </div>
-            <p className="hint">
-              {p ? (
-                <>
-                  <b>{p.sent}</b> terkirim dari {p.total} kontak, {p.waiting} menunggu
-                </>
-              ) : (
-                "Menyiapkan antrean..."
-              )}
-            </p>
-          </>
+          </div>
         ) : (
           <>
             <p>{counts ? "Belum ada promo yang dinyalakan." : "Memuat..."}</p>
@@ -187,5 +182,35 @@ export function Overview({ outlet }: { outlet: Outlet }) {
         </a>
       </article>
     </section>
+  );
+}
+
+const RING_R = 26;
+const RING_LENGTH = 2 * Math.PI * RING_R;
+
+/** Running promo progress as a ring with the percentage in the middle. */
+function Ring({ percent }: { percent: number }) {
+  return (
+    <div
+      className="ring"
+      role="progressbar"
+      aria-valuenow={percent}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label="Progres promo berjalan"
+    >
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <circle className="ring-track" cx="32" cy="32" r={RING_R} />
+        <circle
+          className="ring-fill"
+          cx="32"
+          cy="32"
+          r={RING_R}
+          strokeDasharray={RING_LENGTH}
+          strokeDashoffset={RING_LENGTH * (1 - percent / 100)}
+        />
+      </svg>
+      <span>{percent}%</span>
+    </div>
   );
 }

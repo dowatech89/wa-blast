@@ -4,12 +4,13 @@ import { AdminTab, MyPassword } from "./Accounts";
 import { AllOutlets } from "./AllOutlets";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
-import { Icon, type IconName } from "./icons";
+import { Icon, type IconName, Logo } from "./icons";
 import { toEmail } from "./login";
 import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
 import { db, type Outlet } from "./supabase";
+import { Toaster } from "./toast";
 
 const POLL_MS = 4000;
 
@@ -31,7 +32,12 @@ export function App() {
   }, []);
 
   if (session === undefined) return <p className="page-message">Memuat...</p>;
-  return session ? <Dashboard /> : <Login />;
+  return (
+    <>
+      {session ? <Dashboard /> : <Login />}
+      <Toaster />
+    </>
+  );
 }
 
 function Login() {
@@ -52,10 +58,31 @@ function Login() {
 
   return (
     <main className="login">
+      <section className="login-hero" aria-label="Tentang WA Blast">
+        <p className="brand">
+          <Logo size={40} />
+          WA Blast
+        </p>
+        <h2>Promo WhatsApp outlet, terkirim pelan-pelan dan aman.</h2>
+        <ul>
+          <li>
+            <Icon name="siap" />
+            Foto dan pesan dengan nama tiap pelanggan
+          </li>
+          <li>
+            <Icon name="siap" />
+            Jeda acak, batas harian, dan tombol STOP otomatis
+          </li>
+          <li>
+            <Icon name="siap" />
+            Pantau semua outlet dari satu layar
+          </li>
+        </ul>
+      </section>
       <div className="login-card">
         <div className="card-head">
-          <h1 className="brand">WA Blast</h1>
-          <p>Kirim promo WhatsApp outlet kamu. Masuk pakai akun dari admin.</p>
+          <h1>Masuk</h1>
+          <p>Pakai nama pengguna dan kata sandi dari admin.</p>
         </div>
         <form onSubmit={submit} className="stack">
           <label>
@@ -246,7 +273,10 @@ function Frame({ title, nav, children }: { title: string; nav: NavItem[]; childr
       <aside className="side">
         <header className="top">
           <div>
-            <p className="brand small">WA Blast</p>
+            <p className="brand small">
+              <Logo size={22} />
+              WA Blast
+            </p>
             <h1>{title}</h1>
           </div>
           <button type="button" className="link sign-out" onClick={() => db.auth.signOut()}>

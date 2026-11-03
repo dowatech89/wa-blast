@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { db, type Outlet } from "./supabase";
+import { toast } from "./toast";
 
 type NumberKey =
   | "daily_limit"
@@ -67,7 +68,8 @@ export function SettingsTab({ outlet, onSaved }: { outlet: Outlet; onSaved: () =
       });
     else {
       setVersion(data[0].version);
-      setMessage({ ok: true, text: "Pengaturan tersimpan." });
+      setMessage(null);
+      toast("Pengaturan tersimpan");
       onSaved();
     }
   }

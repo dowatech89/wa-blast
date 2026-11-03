@@ -86,7 +86,12 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Pemanasan nomor baru: batas harian naik tiap hari sejak nomor tersambung (`effective_daily_limit`, `mark_number_linked`)
 - [x] Cek nomor punya WhatsApp sebelum kirim (GOWA `/user/check`); nomor tanpa WA dilewati selamanya
 - [x] Berhenti otomatis setelah N gagal berturut-turut, dan saat WhatsApp terputus; peringatan kuning di dashboard
-- [ ] ⏳ Jalankan `supabase/migrations/20261103000000_fixed_send_delay.sql` di SQL Editor (access token sudah tidak berlaku): jeda antar pesan dikunci 30-90 detik acak, tidak bisa diubah dari dashboard
+- [ ] ⏳ Jalankan di SQL Editor, berurutan (access token sudah tidak berlaku): `20261103000000_fixed_send_delay.sql` (jeda dikunci 30-90 detik acak) lalu `20261103010000_sender_name.sql` (nama pengirim)
+- [x] Jeda antar pesan otomatis: kolom jeda dihapus dari Pengaturan
+- [x] **Nama pengirim** di menu WhatsApp: WABlast memasang nama profil WhatsApp lewat GOWA `/user/pushname` (default nama outlet, ulang otomatis untuk nomor baru); gagal pasang tidak menghentikan kirim
+- [x] Isian `{outlet}` di pesan promo
+- [x] Tampilan: logo + favicon, login dengan panel teal, ikon status di "Siap kirim?", lingkaran progres, pratinjau chat WhatsApp, avatar inisial (kontak, outlet), kolom cari berikon, notifikasi "Tersimpan"
+- [x] `WABlast.exe` dibuild ulang 2026-11-03 (nama pengirim); dites jalan ke database online yang belum dimigrasi
 - [x] Jeda N hari kalender antar promo per pelanggan; promo berikutnya menunggu, tidak dilewati (`20261030010000_defer_promo_gap.sql`, dipasang online)
 - [x] Kalimat berhenti langganan otomatis di akhir pesan + kata STOP diatur dari database
 - [x] Tab Pengaturan: bagian "Pengaman nomor"; tab Promo: contoh pesan persis seperti yang diterima pelanggan; tab Kontak: penanda "Tidak punya WhatsApp"
