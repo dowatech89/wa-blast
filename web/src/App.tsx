@@ -1,9 +1,10 @@
 import type { Session } from "@supabase/supabase-js";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from "react";
 import { AdminTab, MyPassword } from "./Accounts";
 import { AllOutlets } from "./AllOutlets";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
+import { Icon, type IconName } from "./icons";
 import { toEmail } from "./login";
 import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
@@ -146,62 +147,41 @@ function Dashboard() {
     setOutletId(id);
     location.hash = id ? "promo" : "semua";
   };
-  const signOut = (
-    <button type="button" className="link" onClick={() => db.auth.signOut()}>
-      Keluar
-    </button>
-  );
   // A supervisor with no outlet yet still needs the Admin menu to create the first one.
   if (isSupervisor === null) return <p className="page-message">Memuat...</p>;
   if (!outlet && isSupervisor)
     return (
-      <div className="shell">
-        <header className="top">
-          <h1>Admin</h1>
-          {signOut}
-        </header>
-        <AdminTab onChanged={load} />
-      </div>
+      <Frame title="Admin" nav={[{ id: "admin", label: "Admin", current: true }]}>
+        <main>
+          <AdminTab onChanged={load} />
+        </main>
+      </Frame>
     );
   if (error && !outlet) return <p className="page-message error">{error}</p>;
   if (!outlet) return <p className="page-message">Memuat...</p>;
 
   if (overview)
     return (
-      <div className="shell">
-        <header className="top">
-          <div>
-            <p className="brand small">WA Blast</p>
-            <h1>Semua outlet</h1>
-          </div>
-          {signOut}
-        </header>
-        <nav className="tabs" aria-label="Menu">
-          <a href="#semua" aria-current={tab !== "admin" ? "page" : undefined}>
-            Semua outlet
-          </a>
-          <a href="#admin" aria-current={tab === "admin" ? "page" : undefined}>
-            Admin
-          </a>
-        </nav>
+      <Frame
+        title="Semua outlet"
+        nav={[
+          { id: "semua", label: "Semua outlet", current: tab !== "admin" },
+          { id: "admin", label: "Admin", current: tab === "admin" },
+        ]}
+      >
         <main>
           {tab === "admin" ? <AdminTab onChanged={load} /> : <AllOutlets outlets={outlets} onOpen={openOutlet} />}
         </main>
-      </div>
+      </Frame>
     );
 
   const shown = (tab === "admin" && !isSupervisor) || tab === "semua" ? "promo" : tab;
 
   return (
-    <div className="shell">
-      <header className="top">
-        <div>
-          <p className="brand small">WA Blast</p>
-          <h1>{outlet.name}</h1>
-        </div>
-        {signOut}
-      </header>
-
+    <Frame
+      title={outlet.name}
+      nav={TABS.filter((t) => t.id !== "admin" || isSupervisor).map((t) => ({ ...t, current: shown === t.id }))}
+    >
       {outlets.length > 1 && (
         <div className="outlet-pick">
           <button type="button" className="link" onClick={() => openOutlet(null)}>
@@ -220,9 +200,9 @@ function Dashboard() {
         </div>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error notice">{error}</p>}
       {outlet.pause_reason && (
-        <div className="alert" role="alert">
+        <div className="alert notice" role="alert">
           <p>{outlet.pause_reason}</p>
           <button
             type="button"
@@ -239,14 +219,6 @@ function Dashboard() {
 
       <Overview key={`overview-${outlet.id}`} outlet={outlet} />
 
-      <nav className="tabs" aria-label="Menu">
-        {TABS.filter((t) => t.id !== "admin" || isSupervisor).map((t) => (
-          <a key={t.id} href={`#${t.id}`} aria-current={shown === t.id ? "page" : undefined}>
-            {t.label}
-          </a>
-        ))}
-      </nav>
-
       {/* key resets each tab's form state when a supervisor switches outlet */}
       <main key={outlet.id}>
         {shown === "promo" && <PromoTab outlet={outlet} />}
@@ -260,6 +232,40 @@ function Dashboard() {
         )}
         {shown === "admin" && <AdminTab onChanged={load} />}
       </main>
+    </Frame>
+  );
+}
+
+type NavItem = { id: IconName; label: string; current: boolean };
+
+/** Phone: header, then the page, with the menu as icon tiles above the working area (CSS reorders).
+ *  Desktop (900px+): a teal sidebar holds the header and the menu; the page fills the right column. */
+function Frame({ title, nav, children }: { title: string; nav: NavItem[]; children: ReactNode }) {
+  return (
+    <div className="shell">
+      <aside className="side">
+        <header className="top">
+          <div>
+            <p className="brand small">WA Blast</p>
+            <h1>{title}</h1>
+          </div>
+          <button type="button" className="link sign-out" onClick={() => db.auth.signOut()}>
+            <Icon name="keluar" />
+            Keluar
+          </button>
+        </header>
+        <nav className="tabs" aria-label="Menu">
+          {nav.map((t) => (
+            <a key={t.id} href={`#${t.id}`} aria-current={t.current ? "page" : undefined}>
+              <span className="tab-icon">
+                <Icon name={t.id} />
+              </span>
+              {t.label}
+            </a>
+          ))}
+        </nav>
+      </aside>
+      <div className="content">{children}</div>
     </div>
   );
 }

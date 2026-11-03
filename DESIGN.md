@@ -6,8 +6,9 @@ question, "is my promo going out?", and to press one button (NYALAKAN / MATIKAN)
 from a laptop. Copy is plain Indonesian ("bahasa bayi"): short sentences, no jargon.
 
 ## Personality
-Warm and calm, like a well-run restaurant floor: dependable, not flashy, not "tech". The screen should feel
-finished and trustworthy enough that a captain does not worry they broke something.
+Calm and soft, like a quiet spa lobby: dependable, not flashy, not "tech". The screen should feel finished and
+trustworthy enough that a captain does not worry they broke something. Visual reference (2026-11-02): a mobile
+app with a muted teal sidebar, white cards on soft shadows, and icon tiles for categories.
 
 ## Dials
 - ENERGY 2: quiet surfaces, one confident colour.
@@ -17,18 +18,19 @@ finished and trustworthy enough that a captain does not worry they broke somethi
 ## Colour (light only; outlets use the dashboard in daylight, and one theme halves the QA)
 | Token | Value | Use |
 | :--- | :--- | :--- |
-| `--bg` | `#f6f3ee` | Page: warm linen, not clinical white |
+| `--bg` | `#f3f1ef` | Page: soft warm grey |
 | `--surface` | `#ffffff` | Cards and inputs |
-| `--surface-2` | `#faf8f4` | Quiet inner panels, list hover |
-| `--border` | `#e6e0d6` | Card edges |
-| `--control-border` | `#8a8377` | Input edges (3.75:1, WCAG 1.4.11) |
-| `--text` | `#1c1a17` | Body |
-| `--muted` | `#5f5950` | Secondary text (≥ 6:1 on white) |
-| `--brand` | `#17603d` | Herb green: the one brand colour. "Send / on / ready", primary buttons, active tab |
-| `--brand-soft` | `#e4f0e8` | Ready state backgrounds, chat bubble |
-| `--brand-ink` | `#0f3f28` | Text on `--brand-soft` |
+| `--surface-2` | `#f6f5f4` | Quiet inner panels, list hover |
+| `--border` | `#e8e4e1` | Hairlines inside cards, progress track |
+| `--control-border` | `#8a908f` | Input edges (3.25:1, WCAG 1.4.11) |
+| `--text` | `#1b2120` | Body |
+| `--muted` | `#666b6a` | Secondary text (5.4:1 on white, 4.8:1 on bg) |
+| `--brand` | `#3d6b66` | Muted teal, the one brand colour: sidebar, "send / on / ready", primary buttons, active menu |
+| `--brand-soft` | `#e2eeeb` | Ready state backgrounds, chat bubble |
+| `--brand-ink` | `#1e4440` | Text on `--brand-soft` |
+| `--side-text` / `--side-active` | `#d5e6e3` / `#2f5551` | Menu labels on the sidebar (4.65:1), the current item |
 | `--danger` | `#b3261e` | Stop / delete / not ready only |
-| `--danger-soft` | `#fbeae7` | |
+| `--danger-soft` / `--danger-border` | `#fbeae7` / `#efc2bc` | |
 | `--warn-text` / `--warn-soft` | `#7a4a00` / `#fff3d6` | Auto-pause notice only |
 No gradients, no glow. Red and amber only ever mean a real problem.
 
@@ -40,19 +42,22 @@ Numbers in the overview use tabular figures.
 
 ## Space, shape, depth
 - Spacing scale: 4, 8, 12, 16, 24, 32, 48.
-- Radius: 16 cards, 12 controls and inner panels, 999 only for status pills. Nothing else is pill-shaped.
-- Depth: cards are flat with a 1px border. Only the sticky header gets a hairline shadow when scrolled content
-  passes under it. The NYALAKAN button has no shadow; its colour and size carry it.
+- Radius: 20 cards, 14 controls, menu tiles and inner panels, 999 only for status pills.
+- Depth: cards, tiles, lists and menu tiles sit on one soft shadow (`--shadow`) with no border. A red edge
+  marks a card that is not ready. Buttons have no shadow; colour and size carry them.
 
 ## Layout
-- Max width 960px. Phone first, 16px gutters, no horizontal scroll at 320px.
+- Phone first, 16px gutters, no horizontal scroll at 320px. Order on a phone: header (name + Keluar), overview
+  bento, menu as a row of 52px icon tiles (the current one filled teal, label under it), then the working area.
+- Desktop (900px+): a 248px teal sidebar holds the name, Keluar and a vertical icon menu; the page fills the right
+  column (max 1240px total).
+- Supervisors land on **Semua outlet**: one card per outlet, those needing attention first.
 - **Overview bento** sits above the tabs on every screen. It is a bento because its cells really differ in weight:
   1. **Siap kirim?** (largest): the verdict that decides everything else. PC on, WhatsApp linked, inside sending
      hours. Shows the single fix when something is missing.
   2. **Promo berjalan** (wide): the running promo's real progress, or how to start one.
   3. **Terkirim hari ini** and **Kontak** (small): real counts with today's real limit.
   Phone: 1 + 1 + 2 small side by side. Desktop (≥ 760px): 4 columns, verdict spans 2×2.
-- Tabs below the overview, then the working area of the chosen tab.
 
 ## Components
 - Buttons: primary (brand fill), danger (red fill), secondary (white, outlined), link. 48px min height; the

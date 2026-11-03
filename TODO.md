@@ -50,6 +50,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Kontras WCAG AA semua teks, tombol ≥ 44px, keyboard + fokus terlihat, tanpa scroll samping
 - [x] Arah desain di `DESIGN.md` (warna, font Plus Jakarta Sans, spasi, radius); ringkasan bento "Siap kirim?" di atas semua menu
 - [x] Halaman **Semua outlet** untuk supervisor: kartu tiap outlet (PC, WhatsApp, terkirim hari ini, promo berjalan), yang bermasalah di atas; `outlet_overview()` dipasang online
+- [x] Gaya baru (referensi Pinterest 2026-11-02): teal kalem, kartu berbayang, menu kotak ikon di HP, sidebar teal di laptop; dicek 360px dan 1366px
 - [ ] ⏳ Logo outlet/brand (opsional)
 - [x] Tombol **Ubah promo** (judul, foto, pesan) saat belum dikirim atau berhenti sementara; database menolak edit promo yang sedang mengirim atau selesai (`20261102000000_edit_promo.sql`, dipasang online)
 - [x] Repo publik https://github.com/dowatech89/wa-blast (tanpa `.agents/`, kunci, dan binary)

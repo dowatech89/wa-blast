@@ -1,21 +1,26 @@
 /* Design direction: DESIGN.md. ENERGY 2 / RHYTHM 2 / MOTION 1.
-   Warm linen base, one herb-green brand colour for "send / on / ready", red and amber only for real problems. */
+   Soft grey base, white cards lifted by a soft shadow, one muted teal for "send / on / ready" and the sidebar,
+   red and amber only for real problems. */
 :root {
-  --bg: #f6f3ee;
+  --bg: #f3f1ef;
   --surface: #ffffff;
-  --surface-2: #faf8f4;
-  --border: #e6e0d6;
-  --control-border: #8a8377; /* 3.75:1 on white, WCAG 1.4.11 */
-  --text: #1c1a17;
-  --muted: #5f5950;
-  --brand: #17603d;
-  --brand-hover: #124f32;
+  --surface-2: #f6f5f4;
+  --border: #e8e4e1;
+  --control-border: #8a908f; /* 3.25:1 on white, WCAG 1.4.11 */
+  --text: #1b2120;
+  --muted: #666b6a;
+  --brand: #3d6b66;
+  --brand-hover: #335c58;
   --brand-text: #ffffff;
-  --brand-soft: #e4f0e8;
-  --brand-ink: #0f3f28;
+  --brand-soft: #e2eeeb;
+  --brand-ink: #1e4440;
+  --side-text: #d5e6e3; /* nav labels on the teal sidebar, 4.65:1 */
+  --side-active: #2f5551;
+  --shadow: 0 1px 2px rgb(30 50 48 / 0.05), 0 8px 24px rgb(30 50 48 / 0.06);
   --danger: #b3261e;
   --danger-hover: #93201a;
   --danger-soft: #fbeae7;
+  --danger-border: #efc2bc;
   --warn-text: #7a4a00;
   --warn-soft: #fff3d6;
   --warn-border: #e9c46a;
@@ -29,9 +34,9 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --radius: 16px;
-  --radius-sm: 12px;
-  --radius-xs: 8px;
+  --radius: 20px;
+  --radius-sm: 14px;
+  --radius-xs: 10px;
 
   color-scheme: light;
   font-family: "Plus Jakarta Sans Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -90,10 +95,66 @@ a {
 
 /* ---------- Page frames ---------- */
 
+/* Phone: one column. .side and .content dissolve (display: contents) so `order` can put the menu between the
+   overview and the working area. Desktop: a teal sidebar on the left, the page on the right. */
 .shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   max-width: 960px;
   margin: 0 auto;
   padding: 0 var(--space-4) var(--space-7);
+}
+.side,
+.content {
+  display: contents;
+}
+.top {
+  order: 1;
+}
+.outlet-pick {
+  order: 2;
+}
+.notice {
+  order: 3;
+}
+.bento {
+  order: 4;
+}
+.tabs {
+  order: 5;
+}
+.content > main {
+  order: 6;
+}
+@media (min-width: 900px) {
+  .shell {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    gap: var(--space-6);
+    max-width: 1240px;
+    padding: 0 var(--space-6) 0 0;
+  }
+  .side {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: var(--space-5) var(--space-4);
+    background: var(--brand);
+    color: var(--brand-text);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-6) 0 var(--space-7);
+    min-width: 0;
+  }
 }
 .page-message {
   padding: var(--space-6) var(--space-4);
@@ -109,7 +170,7 @@ a {
 .login-card {
   width: min(400px, 100%);
   background: var(--surface);
-  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
   border-radius: var(--radius);
   padding: var(--space-6) var(--space-5);
   display: grid;
@@ -137,12 +198,37 @@ a {
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) 0;
-  margin-bottom: var(--space-3);
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 .top h1 {
   overflow-wrap: anywhere;
+}
+button.sign-out {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+@media (min-width: 900px) {
+  .top {
+    position: static;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0;
+    background: none;
+    border: 0;
+  }
+  .side .brand,
+  .side button.sign-out {
+    color: var(--side-text);
+  }
+  .side button.sign-out {
+    padding-inline: 0;
+  }
+  .side button.sign-out:hover {
+    color: var(--brand-text);
+  }
 }
 
 .stack {
@@ -168,7 +254,7 @@ a {
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
   border-radius: var(--radius);
   padding: var(--space-5) var(--space-4);
 }
@@ -204,7 +290,7 @@ a {
   padding: var(--space-5) var(--space-4);
   text-align: center;
   background: var(--surface);
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--control-border);
   border-radius: var(--radius);
 }
 .error {
@@ -231,11 +317,11 @@ a {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-  margin-bottom: var(--space-5);
 }
 .tile {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow);
   border-radius: var(--radius);
   padding: var(--space-4);
   display: grid;
@@ -273,7 +359,7 @@ a {
   color: var(--brand-ink);
 }
 .tile-verdict.blocked {
-  border-color: #efc2bc;
+  border-color: var(--danger-border);
 }
 .verdict {
   font-size: 1.35rem;
@@ -367,41 +453,83 @@ a {
   border-color: transparent;
 }
 
-/* ---------- Tabs ---------- */
+/* ---------- Tabs ----------
+   Phone: a row of icon tiles (the active one filled teal), labels under them. Desktop: a vertical menu in the
+   teal sidebar. */
 
 .tabs {
-  display: flex;
-  flex-wrap: wrap; /* a supervisor's fifth tab (Admin) drops to a second row on phones instead of hiding */
-  gap: var(--space-1);
-  padding: var(--space-1);
-  margin-bottom: var(--space-5);
-  background: #ebe6dd;
-  border-radius: var(--radius-sm);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: var(--space-2);
 }
 .tabs a {
-  flex: 1 0 auto;
-  text-align: center;
-  padding: 10px 6px; /* a captain's four tabs fit one row on a 360px phone */
+  display: grid;
+  justify-items: center;
+  gap: 6px;
   min-height: 44px;
   color: var(--muted);
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.88rem;
-  border-radius: var(--radius-xs);
+  font-size: 0.8rem;
+  text-align: center;
 }
-@media (max-width: 380px) {
-  .tabs a {
-    font-size: 0.82rem;
-    padding: 10px 3px;
-  }
+.tab-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: var(--shadow);
+}
+.icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
 }
 .tabs a:hover {
   color: var(--text);
 }
 .tabs a[aria-current="page"] {
-  color: var(--text);
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgb(28 26 23 / 0.08);
+  color: var(--brand);
+  font-weight: 700;
+}
+.tabs a[aria-current="page"] .tab-icon {
+  background: var(--brand);
+  color: var(--brand-text);
+}
+@media (min-width: 900px) {
+  .tabs {
+    grid-template-columns: none;
+    gap: var(--space-1);
+  }
+  .tabs a {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--side-text);
+    font-size: 0.95rem;
+    text-align: left;
+  }
+  .tab-icon,
+  .tabs a[aria-current="page"] .tab-icon {
+    width: auto;
+    height: auto;
+    background: none;
+    color: inherit;
+    box-shadow: none;
+  }
+  .tabs a:hover {
+    color: var(--brand-text);
+    background: rgb(255 255 255 / 0.08);
+  }
+  .tabs a[aria-current="page"] {
+    color: var(--brand-text);
+    background: var(--side-active);
+  }
 }
 
 /* ---------- Forms ---------- */
@@ -433,7 +561,7 @@ textarea {
 }
 input::placeholder,
 textarea::placeholder {
-  color: #8a8377;
+  color: var(--muted);
 }
 input[type="file"] {
   padding: 8px;
@@ -458,7 +586,6 @@ textarea {
 .outlet-pick {
   display: grid;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
 }
 
 /* ---------- Semua outlet (supervisor landing) ---------- */
@@ -494,7 +621,7 @@ button.outlet-card.ready:hover {
   border-color: var(--brand);
 }
 button.outlet-card.blocked {
-  border-color: #efc2bc;
+  border-color: var(--danger-border);
 }
 .outlet-card-head {
   display: flex;
@@ -609,11 +736,10 @@ button.big {
   align-items: flex-start;
 }
 .thumb {
-  width: 88px;
-  height: 88px;
+  width: 96px;
+  height: 96px;
   object-fit: cover;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
   flex: none;
 }
 .thumb-lg {
@@ -661,7 +787,7 @@ button.big {
 
 .bar {
   height: 10px;
-  background: #ebe6dd;
+  background: var(--border);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -679,7 +805,7 @@ button.big {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
   border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
@@ -763,7 +889,6 @@ button.big {
   border: 1px solid var(--warn-border);
   border-radius: var(--radius);
   padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-4);
   font-weight: 600;
 }
 .alert p {
