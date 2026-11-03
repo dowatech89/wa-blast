@@ -4,6 +4,39 @@ Rencana lengkap: [docs/plans/implementation_plan.md](docs/plans/implementation_p
 Susunan: dashboard web (Vite, file statis) + `WABlast.exe` (Python + GOWA) di PC tiap outlet + Supabase. Gratis, tanpa VPS.
 Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, dikerjakan begitu tersedia.
 
+## Sisa pekerjaan (urut, per 2026-11-03)
+Pemilik = kamu, Claude = dikerjakan di sini.
+
+**A. Cek dashboard baru (pemilik, di Vercel)**
+1. [ ] Login pakai dropdown outlet; dowa/supervisor lewat "Lainnya"
+2. [ ] Promo: ketik pesan + pilih foto, lihat pratinjau chat berbingkai HP; Simpan muncul notifikasi "Tersimpan"
+3. [ ] Promo draf: **Ubah promo**; promo selesai: **Pakai lagi (salin & ubah)**
+4. [ ] Kontak: **Izinkan kirim lagi** untuk Faras (login supervisor)
+5. [ ] WhatsApp: status + titik hijau/merah di menu; kotak **Nama pengirim**
+
+**B. Nama pengirim di WhatsApp**
+6. [ ] Pemilik: jalankan `agent\dist\WABlast.exe` (build 2026-11-03), cek nama profil nomor Sunset jadi "Sunset Grill"; Claude cek `sender_name_applied` di database
+7. [ ] Pemilik, di HP outlet: pasang logo sebagai foto profil, lalu Privasi, Foto profil, Semua orang
+
+**C. Pilot Sunset Grill**
+8. [ ] Pasang `WABlast.exe` di PC Sunset (cek 64-bit), login `sunset`, pilih Yes untuk nyala otomatis, scan QR, restart PC, pastikan tetap tersambung
+9. [ ] Upload Excel kontak asli, kirim 30-50 kontak, pantau 2-3 hari (blokir, STOP, gagal)
+10. [ ] Naikkan batas harian bertahap kalau aman; catat hasil di `MEMORY.md`
+
+**D. Rollout 6 akun lain** (D'Spa `dspa`, D'Bistro `dbistro`, Dragon Beach Club `dbc`, Rooms `rooms`, D'Bar `dbar`, Dowa `dowa`)
+11. [ ] Cek tiap PC Windows 10 64-bit, pasang exe, login akun outlet, Yes nyala otomatis, scan QR
+12. [ ] Bagikan ke tiap captain: link dashboard, kata sandi, `docs/guides/panduan-captain.md`
+13. [ ] Outlet baru dari menu Admin: Claude tambahkan barisnya di `web/src/login.ts` supaya muncul di dropdown login
+
+**E. Teknis (Claude, perlu login Supabase sekali: `npx supabase@2.120.0 login`)**
+14. [ ] Deploy ulang fungsi `admin` (default jam kirim 10:00-18:00 untuk outlet baru)
+
+**F. Opsional / terbuka**
+15. [ ] Pemilik: pastikan kontak promo sudah setuju menerima (opt-in); kirim contoh Excel asli
+16. [ ] Pasang `trivy` untuk scan dependency
+17. [ ] Logo per outlet (sekarang logo WA Blast)
+18. [ ] Tombol pesan WhatsApp (eksperimen GOWA, hanya Android): uji ke HP tim dulu kalau mau
+
 ## Phase 0 — Diskusi & Riset
 - [x] Kumpulkan kebutuhan (6 outlet, 1 nomor captain per outlet, foto + teks, kontak dari Excel, tombol nyalakan)
 - [x] Riset engine WA open source di GitHub (GOWA, WAHA, Evolution API, Baileys, Cloud API resmi)
@@ -23,7 +56,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] 3 migration dijalankan lewat Management API; pendaftaran umum dimatikan
 - [x] Akun `sunset` (outlet Sunset Grill, device `sunset-grill`) + akun `supervisor`; kata sandi di `.env.admin.local`
 - [x] Cek online: tamu ditolak, daftar akun ditolak, captain hanya lihat outletnya, login dashboard produksi lolos
-- [ ] ⏳ Hapus access token Supabase setelah setup (supabase.com/dashboard/account/tokens)
+- [x] Access token Supabase sudah tidak berlaku (2026-11-03); migration berikutnya dijalankan di SQL Editor
 - [x] Scan QR nomor pilot dari dashboard online (laptop, GOWA v9.8.0) → tersambung
 - [x] GOWA naik ke v9.8.0: v9.6.0 kena "can't link new devices" padahal WhatsApp Web bisa; 26 test lolos, exe dibuild ulang
 - [x] Kirim foto + teks + {nama} ke 3 nomor tim dari dashboard online (2026-10-30): 3 terkirim, promo otomatis Selesai
@@ -86,7 +119,7 @@ Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, d
 - [x] Pemanasan nomor baru: batas harian naik tiap hari sejak nomor tersambung (`effective_daily_limit`, `mark_number_linked`)
 - [x] Cek nomor punya WhatsApp sebelum kirim (GOWA `/user/check`); nomor tanpa WA dilewati selamanya
 - [x] Berhenti otomatis setelah N gagal berturut-turut, dan saat WhatsApp terputus; peringatan kuning di dashboard
-- [ ] ⏳ Jalankan di SQL Editor, berurutan (access token sudah tidak berlaku): `20261103000000_fixed_send_delay.sql` (jeda dikunci 30-90 detik acak) lalu `20261103010000_sender_name.sql` (nama pengirim)
+- [x] `20261103000000_fixed_send_delay.sql` dan `20261103010000_sender_name.sql` dijalankan di SQL Editor (dicek online 2026-11-03: jeda 30-90 terkunci, kolom nama pengirim ada)
 - [x] Jeda antar pesan otomatis: kolom jeda dihapus dari Pengaturan
 - [x] **Nama pengirim** di menu WhatsApp: WABlast memasang nama profil WhatsApp lewat GOWA `/user/pushname` (default nama outlet, ulang otomatis untuk nomor baru); gagal pasang tidak menghentikan kirim
 - [x] Jam kirim semua outlet 10:00-18:00 (diubah online 2026-11-03); default outlet baru di fungsi admin juga 10:00-18:00
