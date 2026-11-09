@@ -15,14 +15,15 @@
 - All send + risk settings live in outlets table (dashboard or Supabase); agent re-reads each tick. Guide: docs/guides/pengaturan-backend.md.
 
 - GOWA pinned v9.8.0 (tools/gowa/gowa.exe); v9.6.0 hit "can't link new devices" while WhatsApp Web linked fine (2026-10-30).
-- Built: agent/ (WABlast.exe via build.bat), web/ (Vite+React, Vercel wa-blast-dowa1). OCC errcode PT409. Local stack needs Docker Desktop + npx supabase@2.120.0 start.
-- Send delay fixed 30-90s (not a setting); hours 10-18; sender name via GOWA /user/pushname.
+- Built: agent/ (WABlast.exe via build.bat), web/ (Vite+React, Vercel wa-blast-dowa1).
+- Telegram bot alerts for incoming WA replies; Contacts tab has 'Sudah Di-chat' filter & Excel/copy export.
+- Send delay fixed 30-90s; hours 10-18; sender name via GOWA /user/pushname.
 - Push: gh active account may be monauli; switch to dowatech89 to push, then back.
 
 ## Tool quirks
-- Global uv cache partly corrupt (Missing .dist-info): `uv cache clean <pkg>` per broken package.
+- Global uv cache partly corrupt (Missing .dist-info): `uv cache clean <pkg>`.
 - plan_architect.py on Windows needs PYTHONIOENCODING=utf-8.
-- plan_architect domain must be in .agents/references/domain_archetypes (used web_service_microservices).
+- plan_architect domain: web_service_microservices.
 
 ## Risks
-- Unofficial gateway breaks WhatsApp ToS; ban risk only reduced (opt-in, throttle, warm-up, STOP). Cloud API = zero-risk option.
+- Unofficial gateway breaks WhatsApp ToS; ban risk reduced via opt-in, throttle, warm-up, STOP. Cloud API = zero-risk.
