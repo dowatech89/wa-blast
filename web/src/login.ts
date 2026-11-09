@@ -9,6 +9,8 @@ export function toEmail(username: string) {
 /** Outlets offered in the login dropdown. Personal (dowa) and supervisor accounts are left out on purpose and sign
  *  in through "Lainnya". ponytail: hardcoded; add a row here when the Admin menu creates a new outlet. */
 export const LOGIN_OUTLETS = [
+  { username: "dowa", name: "Dowa Labs (Kantor)" },
+  { username: "dowa-test", name: "Dowa Testing (Laptop)" },
   { username: "sunset", name: "Sunset Grill" },
   { username: "dspa", name: "D'Spa" },
   { username: "dbistro", name: "D'Bistro" },

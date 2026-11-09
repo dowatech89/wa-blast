@@ -9,7 +9,8 @@ it("maps a username to the account email", () => {
 
 it("offers only outlet accounts in the login dropdown", () => {
   const usernames = LOGIN_OUTLETS.map((o) => o.username);
-  expect(usernames).not.toContain("dowa"); // personal account: typed by hand under "Lainnya"
+  expect(usernames).toContain("dowa");
+  expect(usernames).toContain("dowa-test");
   expect(usernames).not.toContain("supervisor");
   for (const u of usernames) expect(u).toMatch(/^[a-z0-9][a-z0-9-]{2,29}$/); // same rule as the admin function
 });
