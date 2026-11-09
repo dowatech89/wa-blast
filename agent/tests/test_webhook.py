@@ -123,3 +123,86 @@ def test_sender_name_is_set_once_per_change_and_skipped_before_migration():
     before = Agent(_Chain(), gowa, {"id": "o2", "name": "Rooms"}, 60)  # type: ignore[arg-type]
     before._sync_sender_name()  # columns missing: sending must not break, nothing is set
     assert len(calls) == 2
+
+
+def test_incoming_message_notification(monkeypatch):
+    import httpx
+
+    from wablast.main import send_telegram_chat_notification
+
+    posted: list[dict] = []
+
+    def mock_post(url, json=None, timeout=None):
+        posted.append({"url": url, "json": json})
+        return type("Resp", (), {"status_code": 200, "json": lambda self: {"ok": True}})()
+
+    monkeypatch.setattr(httpx, "post", mock_post)
+
+    send_telegram_chat_notification(
+        "bot123",
+        "chat456",
+        "Sunset & Grill",
+        "6281234567890",
+        "Budi <VIP>",
+        "Mau pesan meja 1 < 2 & makan?",
+    )
+
+    assert len(posted) == 1
+    assert posted[0]["json"]["chat_id"] == "chat456"
+    text = posted[0]["json"]["text"]
+    assert "Sunset &amp; Grill" in text
+    assert "Budi &lt;VIP&gt;" in text
+    assert "1 &lt; 2 &amp; makan?" in text
+    assert "https://wa.me/6281234567890" in text
+
+
+def test_webhook_receives_incoming_chat():
+    import threading
+    import urllib.request
+
+    from wablast.webhook import serve
+
+    received: list[tuple[str, str, str]] = []
+    server = serve(
+        "127.0.0.1",
+        0,
+        SECRET,
+        lambda: KEYWORDS,
+        on_stop=lambda _p: None,
+        on_message=lambda p, n, b: received.append((p, n, b)),
+    )
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+
+    try:
+        body = json.dumps({
+            "event": "message",
+            "device_id": "628999@s.whatsapp.net",
+            "payload": {
+                "id": "MSG1",
+                "chat_id": "628987654321@s.whatsapp.net",
+                "from": "628987654321@s.whatsapp.net",
+                "from_name": "Andi",
+                "is_from_me": False,
+                "body": "Halo mau tanya promo",
+            },
+        }).encode()
+
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/",
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "X-Hub-Signature-256": sign(body),
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req) as resp:
+            assert resp.status == 200
+
+        assert len(received) == 1
+        assert received[0] == ("628987654321", "Andi", "Halo mau tanya promo")
+    finally:
+        server.shutdown()
+

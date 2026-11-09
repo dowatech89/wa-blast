@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 log = logging.getLogger(__name__)
 
-_PERSONAL_JID = re.compile(r"^(\d+)@s\.whatsapp\.net$")
+_PERSONAL_JID = re.compile(r"^(\d+)@(?:s\.whatsapp\.net|c\.us)$")
 
 
 def verify_signature(body: bytes, header: str | None, secret: str) -> bool:
@@ -72,8 +72,30 @@ def serve(
                     match = _PERSONAL_JID.match(str(payload.get("from", "")))
                     phone = match.group(1) if match else None
                     if phone:
-                        msg_body = str(payload.get("body", "")).strip()
-                        sender_name = str(payload.get("push_name") or "")
+                        sender_name = str(
+                            payload.get("sender_display_name")
+                            or payload.get("from_name")
+                            or payload.get("push_name")
+                            or ""
+                        ).strip()
+                        msg_body = str(payload.get("body") or payload.get("caption") or "").strip()
+                        if not msg_body:
+                            if "audio" in payload:
+                                msg_body = "[Pesan Suara / Audio]"
+                            elif "image" in payload:
+                                msg_body = "[Gambar / Foto]"
+                            elif "video" in payload:
+                                msg_body = "[Video]"
+                            elif "document" in payload:
+                                msg_body = "[Dokumen / File]"
+                            elif "sticker" in payload:
+                                msg_body = "[Stiker]"
+                            elif "location" in payload:
+                                msg_body = "[Lokasi]"
+                            elif "contact" in payload:
+                                msg_body = "[Kontak]"
+                            else:
+                                msg_body = "[Pesan Media]"
                         try:
                             on_message(phone, sender_name, msg_body)
                         except Exception as exc:

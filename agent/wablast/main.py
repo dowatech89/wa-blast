@@ -1,6 +1,7 @@
 """WABlast.exe entry point: log in, start GOWA, then send queued messages until the PC shuts down."""
 
 import contextlib
+import html
 import logging
 import sys
 import threading
@@ -69,19 +70,31 @@ def wait_until_ready(gowa: Gowa) -> None:
 def send_telegram_chat_notification(
     token: str, chat_id: str, outlet_name: str, phone: str, name: str, body: str
 ) -> None:
+    safe_outlet = html.escape(outlet_name)
+    safe_phone = html.escape(phone)
+    safe_name = html.escape(name if name else "-")
+    if len(body) > 3000:
+        body = body[:2997] + "..."
+    safe_body = html.escape(body if body else "-")
+
     text = (
         f"💬 <b>Pesan Masuk WhatsApp Baru!</b>\n"
-        f"🏢 <b>Outlet:</b> {outlet_name}\n"
-        f"📱 <b>Nomor:</b> +{phone}\n"
-        f"👤 <b>Pengirim:</b> {name or '-'}\n\n"
-        f"✉️ <b>Isi Pesan:</b>\n<i>{body}</i>"
+        f"🏢 <b>Outlet:</b> {safe_outlet}\n"
+        f"📱 <b>Nomor:</b> +{safe_phone}\n"
+        f"👤 <b>Pengirim:</b> {safe_name}\n\n"
+        f"✉️ <b>Isi Pesan:</b>\n<i>{safe_body}</i>\n\n"
+        f'👉 <a href="https://wa.me/{safe_phone}">Balas Chat di WhatsApp</a>'
     )
     try:
-        httpx.post(
+        res = httpx.post(
             f"https://api.telegram.org/bot{token}/sendMessage",
             json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
-            timeout=5.0,
+            timeout=10.0,
         )
+        if res.status_code >= 400 or not res.json().get("ok"):
+            log.warning("Gagal mengirim notifikasi telegram: %s", res.text)
+        else:
+            log.info("Notifikasi telegram terkirim untuk pesan dari +%s", phone)
     except Exception as exc:
         log.warning("Gagal mengirim notifikasi telegram: %s", exc)
 

@@ -4,8 +4,8 @@ import { type ParseResult, parseContactRows } from "./contacts";
 import { Icon } from "./icons";
 import { initials } from "./initials";
 import { db, type Outlet } from "./supabase";
+import { toast } from "./toast";
 
-const PAGE = 50;
 const SAVE_BATCH = 500;
 
 type MessageRecord = { id: string; status: string; sent_at: string | null };
@@ -20,27 +20,41 @@ type Row = {
 type ContactFilter = "all" | "chatted" | "not_chatted" | "stopped";
 
 export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSupervisor: boolean }) {
-  const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number } | null>(null);
+  const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number; chatted: number } | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ContactFilter>("all");
+  const [limitCount, setLimitCount] = useState(100);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const term = search.trim();
+    const isChatted = filter === "chatted";
     let list = db
       .from("contacts")
-      .select("id, phone, name, opted_out, not_on_whatsapp, messages(id, status, sent_at)")
-      .eq("outlet_id", outlet.id) // a supervisor sees every outlet's rows through RLS
+      .select(
+        isChatted
+          ? "id, phone, name, opted_out, not_on_whatsapp, messages!inner(id, status, sent_at)"
+          : "id, phone, name, opted_out, not_on_whatsapp, messages(id, status, sent_at)"
+      )
+      .eq("outlet_id", outlet.id)
       .order("created_at")
-      .limit(PAGE);
+      .limit(limitCount);
+
+    if (isChatted) {
+      list = list.eq("messages.status", "sent");
+    } else if (filter === "stopped") {
+      list = list.eq("opted_out", true);
+    }
+
     if (term) {
       // Strip characters that would break the PostgREST or() syntax; only search phone when digits were typed.
       const name = term.replaceAll(/[%,()*.]/g, "");
       const digits = term.replace(/\D/g, "").replace(/^0/, "");
       list = list.or(digits ? `name.ilike.%${name}%,phone.ilike.%${digits}%` : `name.ilike.%${name}%`);
     }
-    const [all, stopped, noWa, page] = await Promise.all([
+
+    const [all, stopped, noWa, chatted, page] = await Promise.all([
       db.from("contacts").select("id", { count: "exact", head: true }).eq("outlet_id", outlet.id),
       db.from("contacts").select("id", { count: "exact", head: true }).eq("outlet_id", outlet.id).eq("opted_out", true),
       db
@@ -48,16 +62,27 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
         .select("id", { count: "exact", head: true })
         .eq("outlet_id", outlet.id)
         .eq("not_on_whatsapp", true),
+      db
+        .from("contacts")
+        .select("id, messages!inner(status)", { count: "exact", head: true })
+        .eq("outlet_id", outlet.id)
+        .eq("messages.status", "sent"),
       list,
     ]);
+
     if (all.error || stopped.error || noWa.error || page.error) {
       setError("Gagal memuat kontak. Cek internet kamu.");
       return;
     }
     setError(null);
-    setCounts({ total: all.count ?? 0, stopped: stopped.count ?? 0, noWa: noWa.count ?? 0 });
+    setCounts({
+      total: all.count ?? 0,
+      stopped: stopped.count ?? 0,
+      noWa: noWa.count ?? 0,
+      chatted: chatted.count ?? 0,
+    });
     setRows(page.data as Row[]);
-  }, [search, outlet.id]);
+  }, [search, outlet.id, filter, limitCount]);
   usePoll(load, 15000);
 
   async function remove(row: Row) {
@@ -82,6 +107,55 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
     load();
   }
 
+  async function exportChattedExcel() {
+    const { data, error } = await db
+      .from("contacts")
+      .select("phone, name, messages!inner(status, sent_at)")
+      .eq("outlet_id", outlet.id)
+      .eq("messages.status", "sent");
+    if (error || !data || data.length === 0) {
+      toast("Belum ada nomor yang sudah di-chat.");
+      return;
+    }
+    const { utils, writeFile } = await import("xlsx");
+    const dataRows = [
+      ["Nama", "Nomor WhatsApp", "Tanggal Kirim Terakhir", "Status"],
+      ...data.map((c) => {
+        const msgs = (c.messages as MessageRecord[]) || [];
+        const latest = msgs
+          .filter((m) => m.status === "sent")
+          .sort((a, b) => new Date(b.sent_at || 0).getTime() - new Date(a.sent_at || 0).getTime())[0];
+        return [
+          c.name || "-",
+          "+" + c.phone,
+          latest?.sent_at ? new Date(latest.sent_at).toLocaleString("id-ID") : "-",
+          "Sudah Di-chat",
+        ];
+      }),
+    ];
+    const sheet = utils.aoa_to_sheet(dataRows);
+    sheet["!cols"] = [{ wch: 25 }, { wch: 20 }, { wch: 24 }, { wch: 15 }];
+    const book = utils.book_new();
+    utils.book_append_sheet(book, sheet, "Sudah Di-chat");
+    writeFile(book, `nomor-sudah-dichat-${outlet.name.toLowerCase().replace(/\s+/g, "-")}.xlsx`);
+    toast("File Excel berhasil diunduh.");
+  }
+
+  async function copyChattedNumbers() {
+    const { data, error } = await db
+      .from("contacts")
+      .select("phone, name, messages!inner(status)")
+      .eq("outlet_id", outlet.id)
+      .eq("messages.status", "sent");
+    if (error || !data || data.length === 0) {
+      toast("Belum ada nomor yang sudah di-chat.");
+      return;
+    }
+    const text = data.map((c) => `+${c.phone}${c.name ? ` (${c.name})` : ""}`).join("\n");
+    await navigator.clipboard.writeText(text);
+    toast(`${data.length} nomor berhasil disalin ke clipboard!`);
+  }
+
   return (
     <div className="stack-lg">
       <Upload outlet={outlet} onSaved={load} />
@@ -97,14 +171,14 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
             Mereka tidak akan dikirimi promo.
           </p>
         )}
-        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", alignItems: "center", marginBottom: "12px" }}>
           <button
             type="button"
             className={filter === "all" ? "primary" : "secondary"}
             style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
             onClick={() => setFilter("all")}
           >
-            Semua ({rows?.length ?? 0})
+            Semua ({counts?.total ?? rows?.length ?? 0})
           </button>
           <button
             type="button"
@@ -112,7 +186,7 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
             style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
             onClick={() => setFilter("chatted")}
           >
-            ✓ Sudah Di-chat ({(rows || []).filter((r) => r.messages?.some((m) => m.status === "sent")).length})
+            ✓ Sudah Di-chat ({counts?.chatted ?? (rows || []).filter((r) => r.messages?.some((m) => m.status === "sent")).length})
           </button>
           <button
             type="button"
@@ -120,7 +194,7 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
             style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
             onClick={() => setFilter("not_chatted")}
           >
-            Belum Di-chat ({(rows || []).filter((r) => !r.messages?.some((m) => m.status === "sent") && !r.opted_out).length})
+            Belum Di-chat ({counts ? Math.max(0, counts.total - counts.chatted - counts.stopped - counts.noWa) : (rows || []).filter((r) => !r.messages?.some((m) => m.status === "sent") && !r.opted_out).length})
           </button>
           {counts && counts.stopped > 0 && (
             <button
@@ -131,6 +205,29 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
             >
               Minta Berhenti ({counts.stopped})
             </button>
+          )}
+
+          {counts && counts.chatted > 0 && (
+            <div style={{ marginLeft: "auto", display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="secondary"
+                style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+                onClick={exportChattedExcel}
+                title="Unduh daftar nomor yang sudah di-chat ke Excel"
+              >
+                Unduh Excel ({counts.chatted})
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+                onClick={copyChattedNumbers}
+                title="Salin semua nomor yang sudah di-chat ke clipboard"
+              >
+                Salin Nomor
+              </button>
+            </div>
           )}
         </div>
         <label>
@@ -201,6 +298,16 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
                   </span>
                 </span>
                 <span className="row-actions">
+                  <a
+                    href={`https://wa.me/${r.phone}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="link"
+                    style={{ textDecoration: "none" }}
+                    title={`Buka chat WhatsApp dengan ${r.name || r.phone}`}
+                  >
+                    Chat WA
+                  </a>
                   {r.opted_out && isSupervisor && (
                     <button type="button" className="link" onClick={() => allowAgain(r)}>
                       Izinkan kirim lagi
@@ -215,9 +322,15 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
           </ul>
         )}
         {counts && rows && counts.total > rows.length && !search && (
-          <p className="muted">
-            Menampilkan {rows.length} kontak pertama. Pakai kolom cari untuk menemukan kontak lain.
-          </p>
+          <div style={{ textAlign: "center", marginTop: "16px" }}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setLimitCount((prev) => prev + 100)}
+            >
+              Muat 100 kontak lagi (menampilkan {rows.length} dari {counts.total})
+            </button>
+          </div>
         )}
       </section>
     </div>
