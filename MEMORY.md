@@ -2,7 +2,7 @@
 <!-- Hermes: keep under 2,200 chars -->
 
 ## Project
-- WA blast promo (photo + text) for 7 accounts: Sunset Grill (pilot), D'Spa, D'Bistro, DBC, Rooms, D'Bar, Dowa (owner's personal). All PCs Windows 10. Regular WA numbers.
+- WA blast promo (photo + text) for outlets: Sunset Grill, Dowa Labs (office), Dowa Testing (laptop tester), D'Spa, D'Bistro, DBC, Rooms, D'Bar. All Windows. Regular WA numbers.
 - Plan: docs/plans/implementation_plan.md (validated 100% by plan_architect.py). Progress: TODO.md.
 
 ## Decisions (2026-10-27)
