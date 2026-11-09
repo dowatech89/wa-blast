@@ -250,15 +250,57 @@ def main() -> None:
         raise SystemExit("--autostart only applies to the built WABlast.exe")
     if "--autostart" in sys.argv or "--no-autostart" in sys.argv:
         set_autostart("--autostart" in sys.argv)
+
+    session_file = data_dir() / "session.json"
+    if {"--login", "--switch", "--ganti-outlet"} & set(sys.argv):
+        if session_file.exists():
+            session_file.unlink(missing_ok=True)
+
     instance = claim_single_instance()  # held until this process exits
     if instance is None:
         from tkinter import Tk, messagebox
 
         root = Tk()
         root.withdraw()
-        messagebox.showinfo("WA Blast", "WA Blast sudah jalan di belakang layar. Buka dashboard untuk melihat status.")
+        saved_name = ""
+        if session_file.exists():
+            with contextlib.suppress(Exception):
+                import json
+                sdata = json.loads(session_file.read_text("utf-8"))
+                for val in sdata.values():
+                    if isinstance(val, str) and "@wablast.local" in val:
+                        saved_name = val.split("@")[0]
+                        break
+
+        outlet_info = f"\n(Outlet aktif: {saved_name})" if saved_name else ""
+        switch = messagebox.askyesno(
+            "WA Blast Sudah Berjalan",
+            f"WA Blast sudah berjalan di latar belakang.{outlet_info}\n\n"
+            "Apakah Anda ingin menghentikannya dan mengganti outlet / akun?",
+        )
         root.destroy()
-        return
+        if switch:
+            import os
+            import subprocess
+
+            taskkill = os.path.join(os.environ.get("SystemRoot", r"C:\Windows"), "System32", "taskkill.exe")
+            if not os.path.exists(taskkill):
+                taskkill = "taskkill"
+            subprocess.run(  # noqa: S603
+                [taskkill, "/F", "/FI", f"PID ne {os.getpid()}", "/IM", "WABlast.exe"],
+                capture_output=True,
+                check=False,
+            )
+            subprocess.run([taskkill, "/F", "/IM", "gowa.exe"], capture_output=True, check=False)  # noqa: S603
+            if session_file.exists():
+                session_file.unlink(missing_ok=True)
+            time.sleep(0.5)
+            instance = claim_single_instance()
+            if instance is None:
+                return
+        else:
+            return
+
     handlers: list[logging.Handler] = [
         RotatingFileHandler(data_dir() / "wablast.log", maxBytes=2_000_000, backupCount=3, encoding="utf-8")
     ]
@@ -267,7 +309,6 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s", handlers=handlers)
     logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per request every tick drowns real events
     settings = Settings()  # type: ignore[call-arg]  # values come from env files
-    session_file = data_dir() / "session.json"
     first_login = not session_file.exists()
     db = session.connect(settings.supabase_url, settings.supabase_anon_key, session_file)
     # Explicit opt-in on this PC; --autostart / --no-autostart still work for scripted installs.

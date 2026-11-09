@@ -38,19 +38,179 @@ class FileStorage(SyncSupportedStorage):
         self.path.write_text(json.dumps(data), "utf-8")
 
 
-def ask_credentials(error: str | None) -> tuple[str, str]:
-    from tkinter import Tk, messagebox, simpledialog
+DEFAULT_OUTLETS: list[tuple[str, str]] = [
+    ("Dowa Testing (Laptop)", "dowa-test"),
+    ("Dowa Labs (Kantor)", "dowa"),
+    ("Sunset Grill", "sunset"),
+    ("D'Spa", "dspa"),
+    ("D'Bistro", "dbistro"),
+    ("Dragon Beach Club", "dbc"),
+    ("Rooms", "rooms"),
+    ("D'Bar", "dbar"),
+]
+MANUAL_OPTION = "Lainnya (ketik manual)..."
 
-    root = Tk()
-    root.withdraw()
+
+def ask_credentials(error: str | None = None, initial_outlet: str | None = None) -> tuple[str, str]:
+    import contextlib
+    import tkinter as tk
+    from tkinter import ttk
+
+    root = tk.Tk()
+    root.title("WA Blast — Masuk Outlet")
+    root.resizable(False, False)
+
+    with contextlib.suppress(Exception):
+        style = ttk.Style()
+        if "vista" in style.theme_names():
+            style.theme_use("vista")
+
+    result: dict[str, str] = {}
+
+    frame = ttk.Frame(root, padding=(20, 16, 20, 16))
+    frame.grid(row=0, column=0, sticky="nsew")
+
+    header = ttk.Label(
+        frame,
+        text="Sambungkan Komputer Outlet ke WA Blast",
+        font=("Segoe UI", 11, "bold"),
+    )
+    header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 4))
+
+    sub = ttk.Label(
+        frame,
+        text="Pilih outlet untuk PC ini agar pesan dapat dikirim sesuai jadwal.",
+        font=("Segoe UI", 8),
+        foreground="#666666",
+    )
+    sub.grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 12))
+
+    current_row = 2
     if error:
-        messagebox.showerror("WA Blast", error)
-    email = simpledialog.askstring("WA Blast", "Masukkan nama pengguna:")
-    password = simpledialog.askstring("WA Blast", "Masukkan kata sandi:", show="*")
-    root.destroy()
-    if not email or not password:
+        err_lbl = ttk.Label(
+            frame,
+            text=f"⚠ {error}",
+            font=("Segoe UI", 9, "bold"),
+            foreground="#dc2626",
+            wraplength=340,
+        )
+        err_lbl.grid(row=current_row, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        current_row += 1
+
+    lbl_combo = ttk.Label(frame, text="Nama Outlet:", font=("Segoe UI", 9, "bold"))
+    lbl_combo.grid(row=current_row, column=0, sticky="w", pady=(0, 4))
+    current_row += 1
+
+    outlet_display = [name for name, _ in DEFAULT_OUTLETS] + [MANUAL_OPTION]
+    outlet_map = {name: u for name, u in DEFAULT_OUTLETS}
+
+    # Default selection
+    default_sel = outlet_display[0]
+    if initial_outlet:
+        for name, u in DEFAULT_OUTLETS:
+            if u == initial_outlet or name.lower() == initial_outlet.lower():
+                default_sel = name
+                break
+
+    combo_var = tk.StringVar(value=default_sel)
+    combo = ttk.Combobox(
+        frame,
+        textvariable=combo_var,
+        values=outlet_display,
+        state="readonly",
+        width=38,
+        font=("Segoe UI", 9),
+    )
+    combo.grid(row=current_row, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+    current_row += 1
+
+    # Container for manual username (hidden initially)
+    manual_frame = ttk.Frame(frame)
+    lbl_manual = ttk.Label(manual_frame, text="Username Manual:", font=("Segoe UI", 9, "bold"))
+    lbl_manual.grid(row=0, column=0, sticky="w", pady=(0, 2))
+    manual_entry = ttk.Entry(manual_frame, width=40, font=("Segoe UI", 9))
+    manual_entry.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+
+    manual_row = current_row
+
+    def on_outlet_changed(_event: object = None) -> None:
+        if combo_var.get() == MANUAL_OPTION:
+            manual_frame.grid(row=manual_row, column=0, columnspan=2, sticky="ew")
+            manual_entry.focus_set()
+        else:
+            manual_frame.grid_remove()
+            pwd_entry.focus_set()
+
+    combo.bind("<<ComboboxSelected>>", on_outlet_changed)
+    current_row += 1
+
+    lbl_pwd = ttk.Label(frame, text="Kata Sandi:", font=("Segoe UI", 9, "bold"))
+    lbl_pwd.grid(row=current_row, column=0, sticky="w", pady=(0, 4))
+    current_row += 1
+
+    pwd_entry = ttk.Entry(frame, show="*", width=40, font=("Segoe UI", 9))
+    pwd_entry.grid(row=current_row, column=0, columnspan=2, sticky="ew", pady=(0, 6))
+    current_row += 1
+
+    show_pwd_var = tk.BooleanVar(value=False)
+
+    def toggle_show_pwd() -> None:
+        pwd_entry.config(show="" if show_pwd_var.get() else "*")
+
+    chk = ttk.Checkbutton(frame, text="Tampilkan kata sandi", variable=show_pwd_var, command=toggle_show_pwd)
+    chk.grid(row=current_row, column=0, columnspan=2, sticky="w", pady=(0, 14))
+    current_row += 1
+
+    btn_frame = ttk.Frame(frame)
+    btn_frame.grid(row=current_row, column=0, columnspan=2, sticky="e")
+
+    def on_cancel(_event: object = None) -> None:
+        root.destroy()
+
+    def on_submit(_event: object = None) -> None:
+        choice = combo_var.get()
+        if choice == MANUAL_OPTION:
+            uname = manual_entry.get().strip()
+            if not uname:
+                manual_entry.focus_set()
+                return
+        else:
+            uname = outlet_map.get(choice, "")
+        pword = pwd_entry.get()
+        if not pword:
+            pwd_entry.focus_set()
+            return
+
+        result["username"] = uname
+        result["password"] = pword
+        root.destroy()
+
+    btn_cancel = ttk.Button(btn_frame, text="Batal", command=on_cancel)
+    btn_cancel.grid(row=0, column=0, padx=(0, 8))
+
+    btn_submit = ttk.Button(btn_frame, text="Masuk & Sambungkan", command=on_submit)
+    btn_submit.grid(row=0, column=1)
+
+    root.bind("<Return>", on_submit)
+    root.bind("<Escape>", on_cancel)
+
+    # Center window
+    root.update_idletasks()
+    w = root.winfo_reqwidth()
+    h = root.winfo_reqheight()
+    sw = root.winfo_screenwidth()
+    sh = root.winfo_screenheight()
+    root.geometry(f"+{(sw - w) // 2}+{(sh - h) // 2}")
+
+    root.attributes("-topmost", True)
+    root.after(100, lambda: root.attributes("-topmost", False))
+    pwd_entry.focus_set()
+
+    root.mainloop()
+
+    if "username" not in result or "password" not in result:
         raise SystemExit("Login dibatalkan.")
-    return email.strip(), password
+    return result["username"], result["password"]
 
 
 def ask_autostart() -> bool:
@@ -91,10 +251,15 @@ def connect(url: str, anon_key: str, session_file: Path, credentials=ask_credent
     except AuthApiError:
         pass  # saved login was revoked or is too old to refresh: ask again below
     error = None
+    last_username = None
     while True:
-        email, password = credentials(error)
+        try:
+            email, password = credentials(error, initial_outlet=last_username)
+        except TypeError:
+            email, password = credentials(error)
         try:
             client.auth.sign_in_with_password({"email": to_email(email), "password": password})
             return client
         except AuthApiError:
             error = "Nama pengguna atau kata sandi salah. Coba lagi."
+            last_username = email
