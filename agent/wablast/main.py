@@ -85,18 +85,20 @@ def send_telegram_chat_notification(
         f"✉️ <b>Isi Pesan:</b>\n<i>{safe_body}</i>\n\n"
         f'👉 <a href="https://wa.me/{safe_phone}">Balas Chat di WhatsApp</a>'
     )
-    try:
-        res = httpx.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
-            timeout=10.0,
-        )
-        if res.status_code >= 400 or not res.json().get("ok"):
-            log.warning("Gagal mengirim notifikasi telegram: %s", res.text)
-        else:
-            log.info("Notifikasi telegram terkirim untuk pesan dari +%s", phone)
-    except Exception as exc:
-        log.warning("Gagal mengirim notifikasi telegram: %s", exc)
+    chat_ids = [c.strip() for c in chat_id.replace(";", ",").split(",") if c.strip()]
+    for cid in chat_ids:
+        try:
+            res = httpx.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                json={"chat_id": cid, "text": text, "parse_mode": "HTML"},
+                timeout=10.0,
+            )
+            if res.status_code >= 400 or not res.json().get("ok"):
+                log.warning("Gagal mengirim notifikasi telegram ke %s: %s", cid, res.text)
+            else:
+                log.info("Notifikasi telegram terkirim ke %s untuk pesan dari +%s", cid, phone)
+        except Exception as exc:
+            log.warning("Gagal mengirim notifikasi telegram ke %s: %s", cid, exc)
 
 
 def main() -> None:
