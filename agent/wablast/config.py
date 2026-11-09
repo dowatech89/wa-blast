@@ -37,3 +37,5 @@ class Settings(BaseSettings):
     webhook_port: int
     tick_seconds: float = Field(gt=0)
     signed_url_seconds: int = Field(gt=0)
+    telegram_bot_token: str | None = None
+    telegram_chat_id: str | None = None

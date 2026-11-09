@@ -66,6 +66,26 @@ def wait_until_ready(gowa: Gowa) -> None:
     raise RuntimeError("GOWA tidak merespons setelah dijalankan")
 
 
+def send_telegram_chat_notification(
+    token: str, chat_id: str, outlet_name: str, phone: str, name: str, body: str
+) -> None:
+    text = (
+        f"💬 <b>Pesan Masuk WhatsApp Baru!</b>\n"
+        f"🏢 <b>Outlet:</b> {outlet_name}\n"
+        f"📱 <b>Nomor:</b> +{phone}\n"
+        f"👤 <b>Pengirim:</b> {name or '-'}\n\n"
+        f"✉️ <b>Isi Pesan:</b>\n<i>{body}</i>"
+    )
+    try:
+        httpx.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+            timeout=5.0,
+        )
+    except Exception as exc:
+        log.warning("Gagal mengirim notifikasi telegram: %s", exc)
+
+
 def main() -> None:
     if not getattr(sys, "frozen", False) and {"--autostart", "--no-autostart"} & set(sys.argv):
         raise SystemExit("--autostart only applies to the built WABlast.exe")
@@ -107,7 +127,29 @@ def main() -> None:
         if stuck:
             log.warning("%s message(s) interrupted by the last shutdown were marked failed", stuck)
 
-        server = webhook.serve("127.0.0.1", settings.webhook_port, secret, agent.stop_keywords, agent.opt_out)
+        def on_incoming_chat(phone: str, name: str, body: str) -> None:
+            if settings.telegram_bot_token and settings.telegram_chat_id:
+                threading.Thread(
+                    target=send_telegram_chat_notification,
+                    args=(
+                        settings.telegram_bot_token,
+                        settings.telegram_chat_id,
+                        outlet["name"],
+                        phone,
+                        name,
+                        body,
+                    ),
+                    daemon=True,
+                ).start()
+
+        server = webhook.serve(
+            "127.0.0.1",
+            settings.webhook_port,
+            secret,
+            agent.stop_keywords,
+            agent.opt_out,
+            on_message=on_incoming_chat,
+        )
         threading.Thread(target=server.serve_forever, daemon=True).start()
         log.info("WABlast running for outlet %s", outlet["name"])
 

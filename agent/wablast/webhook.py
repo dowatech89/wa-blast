@@ -1,4 +1,4 @@
-"""Local webhook receiver for GOWA events. Only used to catch STOP replies."""
+"""Local webhook receiver for GOWA events. Handles STOP replies and customer incoming chats."""
 
 import hashlib
 import hmac
@@ -40,10 +40,12 @@ def serve(
     secret: str,
     keywords: Callable[[], frozenset[str]],
     on_stop: Callable[[str], None],
+    on_message: Callable[[str, str, str], None] | None = None,
 ):
     """Build the receiver. Caller runs serve_forever() in a thread and shutdown() to stop.
 
     `keywords` is read per request so STOP words edited in the backend apply without a restart.
+    `on_message` is invoked with (phone, push_name, message_body) for incoming replies that are not STOP keywords.
     """
 
     class Handler(BaseHTTPRequestHandler):
@@ -54,14 +56,33 @@ def serve(
                 self.send_response(401)
                 self.end_headers()
                 return
-            phone = stop_request_phone(json.loads(body), keywords())
-            if phone:
-                on_stop(phone)
-                log.info("contact opted out via STOP")
+
+            try:
+                data = json.loads(body)
+            except Exception:
+                data = {}
+
+            phone_stop = stop_request_phone(data, keywords())
+            if phone_stop:
+                on_stop(phone_stop)
+                log.info("contact %s opted out via STOP", phone_stop)
+            elif on_message and data.get("event") == "message":
+                payload = data.get("payload") or {}
+                if not payload.get("is_from_me"):
+                    match = _PERSONAL_JID.match(str(payload.get("from", "")))
+                    phone = match.group(1) if match else None
+                    if phone:
+                        msg_body = str(payload.get("body", "")).strip()
+                        sender_name = str(payload.get("push_name") or "")
+                        try:
+                            on_message(phone, sender_name, msg_body)
+                        except Exception as exc:
+                            log.warning("on_message handler error: %s", exc)
+
             self.send_response(200)
             self.end_headers()
 
-        def log_message(self, format, *args):  # noqa: A002 - keep phone numbers out of the console
+        def log_message(self, format, *args):  # noqa: A002
             del format, args
 
     return ThreadingHTTPServer((host, port), Handler)

@@ -8,19 +8,29 @@ import { db, type Outlet } from "./supabase";
 const PAGE = 50;
 const SAVE_BATCH = 500;
 
-type Row = { id: string; phone: string; name: string | null; opted_out: boolean; not_on_whatsapp: boolean };
+type MessageRecord = { id: string; status: string; sent_at: string | null };
+type Row = {
+  id: string;
+  phone: string;
+  name: string | null;
+  opted_out: boolean;
+  not_on_whatsapp: boolean;
+  messages?: MessageRecord[];
+};
+type ContactFilter = "all" | "chatted" | "not_chatted" | "stopped";
 
 export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSupervisor: boolean }) {
   const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number } | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<ContactFilter>("all");
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const term = search.trim();
     let list = db
       .from("contacts")
-      .select("id, phone, name, opted_out, not_on_whatsapp")
+      .select("id, phone, name, opted_out, not_on_whatsapp, messages(id, status, sent_at)")
       .eq("outlet_id", outlet.id) // a supervisor sees every outlet's rows through RLS
       .order("created_at")
       .limit(PAGE);
@@ -87,6 +97,42 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
             Mereka tidak akan dikirimi promo.
           </p>
         )}
+        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "12px" }}>
+          <button
+            type="button"
+            className={filter === "all" ? "primary" : "secondary"}
+            style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+            onClick={() => setFilter("all")}
+          >
+            Semua ({rows?.length ?? 0})
+          </button>
+          <button
+            type="button"
+            className={filter === "chatted" ? "primary" : "secondary"}
+            style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+            onClick={() => setFilter("chatted")}
+          >
+            ✓ Sudah Di-chat ({(rows || []).filter((r) => r.messages?.some((m) => m.status === "sent")).length})
+          </button>
+          <button
+            type="button"
+            className={filter === "not_chatted" ? "primary" : "secondary"}
+            style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+            onClick={() => setFilter("not_chatted")}
+          >
+            Belum Di-chat ({(rows || []).filter((r) => !r.messages?.some((m) => m.status === "sent") && !r.opted_out).length})
+          </button>
+          {counts && counts.stopped > 0 && (
+            <button
+              type="button"
+              className={filter === "stopped" ? "primary" : "secondary"}
+              style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+              onClick={() => setFilter("stopped")}
+            >
+              Minta Berhenti ({counts.stopped})
+            </button>
+          )}
+        </div>
         <label>
           Cari nama atau nomor
           <span className="search">
@@ -103,7 +149,15 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
         )}
         {rows && rows.length > 0 && (
           <ul className="list">
-            {rows.map((r) => (
+            {rows
+            .filter((r) => {
+              const isChatted = r.messages && r.messages.some((m) => m.status === "sent");
+              if (filter === "chatted") return isChatted;
+              if (filter === "not_chatted") return !isChatted && !r.opted_out && !r.not_on_whatsapp;
+              if (filter === "stopped") return r.opted_out;
+              return true;
+            })
+            .map((r) => (
               <li key={r.id}>
                 <span className="person">
                   <span className="avatar" aria-hidden="true">
@@ -113,6 +167,37 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
                     {r.name || "Tanpa nama"} <span className="muted">{r.phone}</span>
                     {r.opted_out && <span className="badge done">Minta berhenti</span>}
                     {r.not_on_whatsapp && <span className="badge done">Tidak punya WhatsApp</span>}
+                    {(() => {
+                      const sentMsg = r.messages
+                        ?.filter((m) => m.status === "sent")
+                        .sort((a, b) => new Date(b.sent_at || 0).getTime() - new Date(a.sent_at || 0).getTime())[0];
+                      if (sentMsg) {
+                        const dateStr = sentMsg.sent_at
+                          ? new Date(sentMsg.sent_at).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "";
+                        return (
+                          <span
+                            className="badge ok"
+                            style={{
+                              background: "var(--brand-soft)",
+                              color: "var(--brand-ink)",
+                              borderColor: "transparent",
+                            }}
+                          >
+                            ✓ Sudah di-chat {dateStr ? `(${dateStr})` : ""}
+                          </span>
+                        );
+                      }
+                      if (!r.opted_out && !r.not_on_whatsapp) {
+                        return <span className="badge muted">Belum di-chat</span>;
+                      }
+                      return null;
+                    })()}
                   </span>
                 </span>
                 <span className="row-actions">
