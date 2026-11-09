@@ -489,7 +489,7 @@ function PromoCard({
 
 /** What a customer named Budi sees, in a phone frame: the outlet's profile name on top, then the photo and caption
  *  in an outgoing bubble. Always shown, so the captain sees the result while typing. */
-function ChatPreview({
+export function ChatPreview({
   sender,
   image,
   text,

@@ -16,7 +16,7 @@
 
 - GOWA pinned v9.8.0 (tools/gowa/gowa.exe); v9.6.0 hit "can't link new devices" while WhatsApp Web linked fine (2026-10-30).
 - Built: agent/ (WABlast.exe via build.bat), web/ (Vite+React, Vercel wa-blast-dowa1).
-- Telegram alerts (replies, disconnect, startup, daily 18:00 report); typing presence; promo photo/video/PDF with {salam}; Contacts filter 'Sudah Di-chat' & Excel export.
+- Telegram alerts; typing presence; promo photo/video/PDF with {salam}; Contacts filter 'Sudah Di-chat' & Excel export; Testing tab for 1-number campaign trial.
 - Send delay fixed 30-90s; hours 10-18; sender name via GOWA /user/pushname.
 - Push: gh active account may be monauli; switch to dowatech89 to push, then back.
 

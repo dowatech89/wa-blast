@@ -148,7 +148,8 @@ Pemilik = kamu, Claude = dikerjakan di sini.
 - [x] Tab Promo mendukung lampiran media Video (`.mp4`, `.webm`, `.mov`) dan dokumen brosur (`.pdf`) selain foto, diarahkan ke GOWA `/send/video` dan `/send/file`
 - [x] Tab Kontak: filter "✓ Sudah Di-chat", tombol unduh file Excel (`.xlsx`), dan salin nomor ke clipboard
 - [x] Template pesan: variabel salam waktu otomatis `{salam}` (Selamat pagi/siang/sore/malam) dan tombol cepat sisipkan `{salam}`, `{nama}`, `{outlet}`
-- [x] Unit test (Python 16/16 lolos, Frontend 28/28 lolos), Ruff linter lolos, exe dibuild ulang via `agent/build.bat`
+- [x] Modul baru "Testing" di bawah Pengaturan: uji kirim promo ke 1 nomor WhatsApp tersimpan (HP pribadi/tester) dengan pratinjau chat langsung dan eksekusi instan di PC outlet via storage trigger
+- [x] Unit test (Python 17/17 lolos, Frontend 28/28 lolos), Ruff linter lolos, exe dibuild ulang via `agent/build.bat`
 
 ## Phase 5 — Pilot 1 Outlet
 - [ ] ⏳ Install exe di PC outlet pilot

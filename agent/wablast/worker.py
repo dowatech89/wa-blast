@@ -1,5 +1,6 @@
 """One outlet's sending loop. Scheduling state and settings live in Supabase; only the QR timer is in memory."""
 
+import json
 import logging
 import secrets
 import time
@@ -107,7 +108,88 @@ class Agent:
         self.was_connected = True
         self._update_outlet(wa_status="connected", qr_image_path=None, **self._wa_number())
         self._sync_sender_name()
+        if self._check_test_send():
+            return "test_sent"
         return self._send_one()
+
+    def _check_test_send(self) -> bool:
+        """Check if dashboard requested an instant single-recipient test send."""
+        test_path = f"{self.outlet_id}/test_request.json"
+        try:
+            raw = self.db.storage.from_(QR_BUCKET).download(test_path)
+            if not raw:
+                return False
+            data = json.loads(raw.decode("utf-8"))
+        except (StorageApiError, Exception):
+            return False
+
+        phone = str(data.get("phone", "")).strip()
+        message = str(data.get("message", ""))
+        contact_name = str(data.get("name", "Tester"))
+        image_path = data.get("image_path")
+        test_id = str(data.get("id", "test"))
+
+        if not phone:
+            return False
+
+        log.info("Processing test send %s to +%s", test_id, phone)
+        status = "sent"
+        error_msg = None
+
+        try:
+            image_url = None
+            if image_path:
+                signed = self.db.storage.from_(IMAGE_BUCKET).create_signed_url(
+                    image_path, self.signed_url_seconds
+                )
+                image_url = signed.get("signedURL")
+
+            caption = compose_caption(
+                message, contact_name, self.outlet.get("optout_footer") or "", self.outlet["name"]
+            )
+
+            try:
+                self.gowa.set_chat_presence(phone, "start")
+                time.sleep(secrets.SystemRandom().uniform(1.0, 2.0))
+            except Exception as exc:
+                log.debug("test send set_chat_presence start: %s", exc)
+
+            self.gowa.send(phone, caption, image_url)
+
+            try:
+                self.gowa.set_chat_presence(phone, "stop")
+            except Exception as exc:
+                log.debug("test send set_chat_presence stop: %s", exc)
+
+            log.info("Test send %s sent successfully to +%s", test_id, phone)
+        except Exception as exc:
+            status = "failed"
+            error_msg = str(exc)[:500]
+            log.warning("Test send %s failed to +%s: %s", test_id, phone, error_msg)
+
+        result_payload = {
+            "id": test_id,
+            "status": status,
+            "phone": phone,
+            "error": error_msg,
+            "sent_at": now_iso(),
+        }
+
+        try:
+            self.db.storage.from_(QR_BUCKET).upload(
+                f"{self.outlet_id}/test_result.json",
+                json.dumps(result_payload).encode("utf-8"),
+                {"content-type": "application/json", "upsert": "true", "cache-control": "0"},
+            )
+        except Exception as exc:
+            log.warning("Failed to upload test_result.json: %s", exc)
+
+        try:
+            self.db.storage.from_(QR_BUCKET).remove([test_path])
+        except Exception as exc:
+            log.warning("Failed to remove test_request.json: %s", exc)
+
+        return True
 
     def _sync_sender_name(self) -> None:
         """Profile name people see as "~Name" when they have not saved the number: sender_name, else the outlet name.

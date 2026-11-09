@@ -395,4 +395,83 @@ def test_telegram_daily_report_sends_html(monkeypatch):
     assert posted[0]["parse_mode"] == "HTML"
 
 
+def test_agent_processes_test_send_request():
+    import json
+
+    from wablast.worker import Agent
+
+    sent_messages = []
+    fake_gowa = type(
+        "FakeGowa",
+        (),
+        {
+            "status": lambda self: {"is_logged_in": True},
+            "info": lambda self: {"jid": "62811111111:0@s.whatsapp.net"},
+            "set_chat_presence": lambda self, p, a: None,
+            "send": lambda self, p, c, i: sent_messages.append((p, c, i)),
+            "set_push_name": lambda self, n: None,
+        },
+    )()
+    outlet = {"id": "o1", "name": "Sunset Grill", "wa_status": "connected"}
+
+    storage_files = {
+        "o1/test_request.json": json.dumps({
+            "id": "test_1",
+            "phone": "628123456789",
+            "name": "Budi",
+            "message": "Halo {nama}, promo {outlet}!",
+            "image_path": None,
+        }).encode("utf-8")
+    }
+
+    uploaded = {}
+    removed = []
+
+    class MockStorage:
+        def download(self, path):
+            if path in storage_files:
+                return storage_files[path]
+            raise Exception("not found")
+
+        def upload(self, path, content, opts):
+            uploaded[path] = content
+
+        def remove(self, paths):
+            removed.extend(paths)
+
+    class MockDb:
+        def table(self, name):
+            c = _Chain()
+            c.data = outlet if name == "outlets" else []
+            return c
+
+        def rpc(self, *a, **k):
+            return _Chain()
+
+        @property
+        def storage(self):
+            class _S:
+                def from_(self, b):
+                    return MockStorage()
+
+            return _S()
+
+    agent = Agent(MockDb(), fake_gowa, outlet, 60)
+    res = agent._check_test_send()
+
+    assert res is True
+    assert len(sent_messages) == 1
+    phone, caption, img = sent_messages[0]
+    assert phone == "628123456789"
+    assert "Halo Budi, promo Sunset Grill!" in caption
+    assert img is None
+
+    assert "o1/test_result.json" in uploaded
+    res_data = json.loads(uploaded["o1/test_result.json"].decode("utf-8"))
+    assert res_data["status"] == "sent"
+    assert res_data["id"] == "test_1"
+    assert "o1/test_request.json" in removed
+
+
+
 

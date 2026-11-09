@@ -9,6 +9,7 @@ import { LOGIN_OUTLETS, toEmail } from "./login";
 import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
+import { TestingTab } from "./TestingTab";
 import { db, isPcOnline, type Outlet } from "./supabase";
 import { Toaster } from "./toast";
 
@@ -169,6 +170,7 @@ const TABS = [
   { id: "kontak", label: "Kontak" },
   { id: "wa", label: "WhatsApp" },
   { id: "atur", label: "Pengaturan" },
+  { id: "testing", label: "Testing" },
   { id: "admin", label: "Admin" }, // supervisors only
 ] as const;
 type TabId = (typeof TABS)[number]["id"] | "semua"; // "semua": the supervisor's all-outlets page
@@ -301,6 +303,7 @@ function Dashboard() {
             <MyPassword />
           </div>
         )}
+        {shown === "testing" && <TestingTab outlet={outlet} />}
         {shown === "admin" && <AdminTab onChanged={load} />}
       </main>
     </Frame>
