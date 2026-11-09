@@ -139,6 +139,17 @@ Pemilik = kamu, Claude = dikerjakan di sini.
 - [x] Exe dibuild ulang dan dites ke Supabase lokal
 - [x] Panduan: [docs/guides/panduan-captain.md](docs/guides/panduan-captain.md), [docs/guides/pengaturan-backend.md](docs/guides/pengaturan-backend.md)
 
+## Phase 4e — Integrasi Telegram, Media Video/PDF, Anti-Ban & Laporan Harian (2026-11-09)
+- [x] Webhook pesan masuk WhatsApp mengirimkan notifikasi chat ke bot Telegram admin (@dowalabsbot) lengkap dengan nama pengirim dan tautan balas `wa.me/`
+- [x] Peringatan WhatsApp terputus / logout langsung dikirim ke Telegram
+- [x] Notifikasi startup saat `WABlast.exe` pertama kali dinyalakan di PC outlet
+- [x] Rekap harian otomatis ke Telegram setiap pukul 18:00 (pesan terkirim, gagal, STOP, total kontak) dengan proteksi duplikasi tanggal
+- [x] Simulasi anti-ban status typing ("sedang mengetik...") 1.5–3.0 detik sebelum pesan dikirim
+- [x] Tab Promo mendukung lampiran media Video (`.mp4`, `.webm`, `.mov`) dan dokumen brosur (`.pdf`) selain foto, diarahkan ke GOWA `/send/video` dan `/send/file`
+- [x] Tab Kontak: filter "✓ Sudah Di-chat", tombol unduh file Excel (`.xlsx`), dan salin nomor ke clipboard
+- [x] Template pesan: variabel salam waktu otomatis `{salam}` (Selamat pagi/siang/sore/malam) dan tombol cepat sisipkan `{salam}`, `{nama}`, `{outlet}`
+- [x] Unit test (Python 16/16 lolos, Frontend 28/28 lolos), Ruff linter lolos, exe dibuild ulang via `agent/build.bat`
+
 ## Phase 5 — Pilot 1 Outlet
 - [ ] ⏳ Install exe di PC outlet pilot
 - [ ] ⏳ Import Excel asli
