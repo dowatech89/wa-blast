@@ -56,15 +56,28 @@ class Gowa:
     def is_on_whatsapp(self, phone: str) -> bool:
         return bool(self._call("GET", "/user/check", params={"phone": phone}).get("is_on_whatsapp"))
 
-    def send(self, phone: str, caption: str, image_url: str | None) -> str:
-        """Send text, or image with caption. Returns WhatsApp message id."""
+    def set_chat_presence(self, phone: str, action: str = "start") -> None:
+        """Send typing presence indicator: 'start' (composing) or 'stop'."""
         jid = f"{phone}@s.whatsapp.net"
-        if image_url:
-            # multipart/form-data per OpenAPI; (None, value) tuples are plain form fields.
-            fields = {"phone": (None, jid), "caption": (None, caption), "image_url": (None, image_url)}
-            res = self._call("POST", "/send/image", files=fields)
-        else:
+        self._call("POST", "/send/chat-presence", json={"phone": jid, "action": action})
+
+    def send(self, phone: str, caption: str, media_url: str | None) -> str:
+        """Send text, image, video, or file/document with caption. Returns WhatsApp message id."""
+        jid = f"{phone}@s.whatsapp.net"
+        if not media_url:
             res = self._call("POST", "/send/message", json={"phone": jid, "message": caption})
+            return res.get("message_id", "")
+
+        clean_path = media_url.split("?")[0].lower()
+        if clean_path.endswith((".mp4", ".mov", ".webm", ".avi", ".mkv", ".3gp")):
+            fields = {"phone": (None, jid), "caption": (None, caption), "video_url": (None, media_url)}
+            res = self._call("POST", "/send/video", files=fields)
+        elif clean_path.endswith((".pdf", ".doc", ".docx", ".xls", ".xlsx", ".zip", ".csv")):
+            fields = {"phone": (None, jid), "caption": (None, caption), "file_url": (None, media_url)}
+            res = self._call("POST", "/send/file", files=fields)
+        else:
+            fields = {"phone": (None, jid), "caption": (None, caption), "image_url": (None, media_url)}
+            res = self._call("POST", "/send/image", files=fields)
         return res.get("message_id", "")
 
 

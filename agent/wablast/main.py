@@ -101,6 +101,30 @@ def send_telegram_chat_notification(
             log.warning("Gagal mengirim notifikasi telegram ke %s: %s", cid, exc)
 
 
+def send_telegram_disconnect_alert(token: str, chat_id: str, outlet_name: str) -> None:
+    safe_outlet = html.escape(outlet_name)
+    text = (
+        f"🚨 <b>PERINGATAN: WhatsApp Terputus!</b>\n"
+        f"🏢 <b>Outlet:</b> {safe_outlet}\n"
+        f"⚠️ <b>Status:</b> WhatsApp logout / koneksi terputus. Promo otomatis dijeda demi keamanan.\n\n"
+        f"👉 <i>Silakan buka dashboard dan scan ulang kode QR di menu WhatsApp agar pengiriman dapat dilanjutkan.</i>"
+    )
+    chat_ids = [c.strip() for c in chat_id.replace(";", ",").split(",") if c.strip()]
+    for cid in chat_ids:
+        try:
+            res = httpx.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                json={"chat_id": cid, "text": text, "parse_mode": "HTML"},
+                timeout=10.0,
+            )
+            if res.status_code >= 400 or not res.json().get("ok"):
+                log.warning("Gagal mengirim alert disconnect telegram ke %s: %s", cid, res.text)
+            else:
+                log.info("Alert disconnect telegram terkirim ke %s untuk outlet %s", cid, outlet_name)
+        except Exception as exc:
+            log.warning("Gagal mengirim alert disconnect telegram ke %s: %s", cid, exc)
+
+
 def main() -> None:
     if not getattr(sys, "frozen", False) and {"--autostart", "--no-autostart"} & set(sys.argv):
         raise SystemExit("--autostart only applies to the built WABlast.exe")
@@ -137,7 +161,15 @@ def main() -> None:
     try:
         gowa = Gowa(settings.gowa_port, auth, outlet["gowa_device_id"])
         wait_until_ready(gowa)
-        agent = Agent(db, gowa, outlet, settings.signed_url_seconds)
+        def on_disconnect_alert(outlet_name: str) -> None:
+            if settings.telegram_bot_token and settings.telegram_chat_id:
+                threading.Thread(
+                    target=send_telegram_disconnect_alert,
+                    args=(settings.telegram_bot_token, settings.telegram_chat_id, outlet_name),
+                    daemon=True,
+                ).start()
+
+        agent = Agent(db, gowa, outlet, settings.signed_url_seconds, on_disconnect=on_disconnect_alert)
         stuck = agent.recover()
         if stuck:
             log.warning("%s message(s) interrupted by the last shutdown were marked failed", stuck)

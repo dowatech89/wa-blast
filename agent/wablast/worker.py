@@ -1,7 +1,9 @@
 """One outlet's sending loop. Scheduling state and settings live in Supabase; only the QR timer is in memory."""
 
 import logging
+import secrets
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any, cast
 
@@ -31,11 +33,19 @@ def compose_caption(message: str, name: str | None, footer: str, outlet: str = "
 
 
 class Agent:
-    def __init__(self, db: Client, gowa: Gowa, outlet: Row, signed_url_seconds: int):
+    def __init__(
+        self,
+        db: Client,
+        gowa: Gowa,
+        outlet: Row,
+        signed_url_seconds: int,
+        on_disconnect: Callable[[str], None] | None = None,
+    ):
         self.db = db
         self.gowa = gowa
         self.outlet = outlet
         self.signed_url_seconds = signed_url_seconds
+        self.on_disconnect = on_disconnect
         self.qr_valid_until = 0.0
         # A link that drops while the agent runs (or while the PC was off) pauses running promos.
         self.was_connected = outlet.get("wa_status") == "connected"
@@ -70,6 +80,11 @@ class Agent:
                 self.was_connected = False
                 self.db.rpc("auto_pause", {"p_outlet_id": self.outlet_id, "p_reason": DISCONNECT_REASON}).execute()
                 log.warning("WhatsApp link dropped: running promos paused")
+                if self.on_disconnect:
+                    try:
+                        self.on_disconnect(self.outlet["name"])
+                    except Exception as exc:
+                        log.warning("on_disconnect handler error: %s", exc)
             self._show_qr()
             return "waiting_qr"
         self.was_connected = True
@@ -168,7 +183,20 @@ class Agent:
                 caption = compose_caption(
                     m["message"], m["contact_name"], self.outlet.get("optout_footer") or "", self.outlet["name"]
                 )
+
+                # Simulasi sedang mengetik (Anti-Ban)
+                try:
+                    self.gowa.set_chat_presence(m["phone"], "start")
+                    time.sleep(secrets.SystemRandom().uniform(1.5, 3.0))
+                except Exception as exc:
+                    log.debug("gagal set_chat_presence start: %s", exc)
+
                 self.gowa.send(m["phone"], caption, image_url)
+
+                try:
+                    self.gowa.set_chat_presence(m["phone"], "stop")
+                except Exception as exc:
+                    log.debug("gagal set_chat_presence stop: %s", exc)
         except (GowaError, StorageApiError, httpx.HTTPError) as exc:
             result, error = "failed", str(exc)[:500]
             log.warning("send failed for message %s: %s", m["message_id"], error)

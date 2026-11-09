@@ -91,6 +91,8 @@ def test_second_wablast_on_the_same_pc_is_refused():
 class _Chain:
     """Stands in for the Supabase client: every call returns itself, so db.table(...).update(...).execute() works."""
 
+    data = None
+
     def __getattr__(self, _name):
         return lambda *_a, **_k: self
 
@@ -205,4 +207,122 @@ def test_webhook_receives_incoming_chat():
         assert received[0] == ("628987654321", "Andi", "Halo mau tanya promo")
     finally:
         server.shutdown()
+
+
+def test_gowa_send_media_routing(monkeypatch):
+    from wablast.gowa import Gowa
+
+    calls: list[tuple[str, str, dict]] = []
+
+    def mock_call(self, method: str, path: str, **kwargs):
+        calls.append((method, path, kwargs))
+        return {"message_id": "MSG_123"}
+
+    monkeypatch.setattr(Gowa, "_call", mock_call)
+    gowa = Gowa(3100, ("user", "pass"), "device-1")
+
+    # 1. Text only
+    res = gowa.send("628111", "Hello text", None)
+    assert res == "MSG_123"
+    assert calls[-1][1] == "/send/message"
+    assert calls[-1][2]["json"]["phone"] == "628111@s.whatsapp.net"
+
+    # 2. Image (jpg/png)
+    gowa.send("628111", "Photo caption", "https://example.com/promo.jpg?token=abc")
+    assert calls[-1][1] == "/send/image"
+    assert calls[-1][2]["files"]["image_url"][1] == "https://example.com/promo.jpg?token=abc"
+
+    # 3. Video (mp4/webm)
+    gowa.send("628111", "Video caption", "https://example.com/video.mp4?token=abc")
+    assert calls[-1][1] == "/send/video"
+    assert calls[-1][2]["files"]["video_url"][1] == "https://example.com/video.mp4?token=abc"
+
+    # 4. PDF Document (pdf)
+    gowa.send("628111", "Menu PDF", "https://example.com/menu.pdf?token=abc")
+    assert calls[-1][1] == "/send/file"
+    assert calls[-1][2]["files"]["file_url"][1] == "https://example.com/menu.pdf?token=abc"
+
+
+def test_gowa_chat_presence(monkeypatch):
+    from wablast.gowa import Gowa
+
+    calls: list[tuple[str, str, dict]] = []
+
+    def mock_call(self, method: str, path: str, **kwargs):
+        calls.append((method, path, kwargs))
+        return {}
+
+    monkeypatch.setattr(Gowa, "_call", mock_call)
+    gowa = Gowa(3100, ("user", "pass"), "device-1")
+
+    gowa.set_chat_presence("628123456789", "start")
+    assert calls[-1][1] == "/send/chat-presence"
+    assert calls[-1][2]["json"] == {
+        "phone": "628123456789@s.whatsapp.net",
+        "action": "start",
+    }
+
+
+def test_telegram_disconnect_alert(monkeypatch):
+    import httpx
+
+    from wablast.main import send_telegram_disconnect_alert
+
+    posted: list[dict] = []
+
+    def mock_post(url, json=None, timeout=None):
+        posted.append({"url": url, "json": json})
+        return type("Resp", (), {"status_code": 200, "json": lambda self: {"ok": True}})()
+
+    monkeypatch.setattr(httpx, "post", mock_post)
+
+    send_telegram_disconnect_alert("bot123", "chat456, chat789", "Sunset & Grill")
+
+    assert len(posted) == 2
+    assert posted[0]["json"]["chat_id"] == "chat456"
+    assert posted[1]["json"]["chat_id"] == "chat789"
+    text = posted[0]["json"]["text"]
+    assert "Sunset &amp; Grill" in text
+    assert "WhatsApp Terputus" in text
+
+
+def test_agent_disconnect_triggers_callback():
+    from wablast.worker import Agent
+
+    disconnect_outlets: list[str] = []
+    fake_gowa = type(
+        "G",
+        (),
+        {
+            "status": lambda _self: {"is_logged_in": False},
+            "login_qr": lambda _self: (b"png", 60),
+        },
+    )()
+    outlet = {"id": "o1", "name": "Sunset Grill", "wa_status": "connected"}
+
+    class MockDb:
+        def table(self, name):
+            c = _Chain()
+            c.data = outlet if name == "outlets" else []
+            return c
+
+        def rpc(self, *a, **k):
+            return _Chain()
+
+        @property
+        def storage(self):
+            return _Chain()
+
+    agent = Agent(
+        MockDb(),  # type: ignore[arg-type]
+        fake_gowa,  # type: ignore[arg-type]
+        outlet,
+        60,
+        on_disconnect=lambda name: disconnect_outlets.append(name),
+    )
+    assert agent.was_connected is True
+    agent.tick()
+    assert agent.was_connected is False
+    assert disconnect_outlets == ["Sunset Grill"]
+
 
