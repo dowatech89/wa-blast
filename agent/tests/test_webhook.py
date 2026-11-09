@@ -50,11 +50,19 @@ def test_ignores_non_stop_messages():
 
 
 def test_caption_adds_name_and_optout_footer():
-    from wablast.worker import compose_caption
+    from wablast.worker import compose_caption, get_greeting
 
     assert compose_caption("Halo {nama}!", "Budi", "Balas STOP.") == "Halo Budi!\n\nBalas STOP."
     assert compose_caption("Halo {nama}!", None, "") == "Halo Kak!"
     assert compose_caption("Halo {nama}, ini {outlet}.", "Sari", "", "Sunset Grill") == "Halo Sari, ini Sunset Grill."
+
+    assert get_greeting(8) == "Selamat pagi"
+    assert get_greeting(13) == "Selamat siang"
+    assert get_greeting(16) == "Selamat sore"
+    assert get_greeting(21) == "Selamat malam"
+
+    assert compose_caption("{salam} {nama}!", "Budi", "", "", hour=8) == "Selamat pagi Budi!"
+    assert compose_caption("{salam} {nama}!", "Budi", "", "", hour=16) == "Selamat sore Budi!"
 
 
 def test_username_maps_to_account_email():
@@ -324,5 +332,67 @@ def test_agent_disconnect_triggers_callback():
     agent.tick()
     assert agent.was_connected is False
     assert disconnect_outlets == ["Sunset Grill"]
+
+
+def test_telegram_startup_alert_sends_html(monkeypatch):
+    import httpx
+
+    from wablast.main import send_telegram_startup_alert
+
+    posted = []
+
+    def mock_post(url, json, timeout):
+        posted.append(json)
+        return httpx.Response(200, json={"ok": True}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx, "post", mock_post)
+    send_telegram_startup_alert("token123", "chat1,chat2", "Sunset & Grill <Test>", "628123456789")
+
+    assert len(posted) == 2
+    assert posted[0]["chat_id"] == "chat1"
+    assert posted[1]["chat_id"] == "chat2"
+    assert "Sunset &amp; Grill &lt;Test&gt;" in posted[0]["text"]
+    assert "+628123456789" in posted[0]["text"]
+    assert posted[0]["parse_mode"] == "HTML"
+
+
+def test_telegram_daily_report_sends_html(monkeypatch):
+    import httpx
+
+    from wablast.main import send_telegram_daily_report
+
+    posted = []
+
+    def mock_post(url, json, timeout):
+        posted.append(json)
+        return httpx.Response(200, json={"ok": True}, request=httpx.Request("POST", url))
+
+    monkeypatch.setattr(httpx, "post", mock_post)
+
+    class MockReportDb:
+        def table(self, name):
+            c = _Chain()
+            if name == "campaigns":
+                c.data = [{"id": "c1"}, {"id": "c2"}]
+            c.count = 25 if name == "messages" else 2
+            return c
+
+    outlet = {
+        "id": "o1",
+        "name": "Sunset Grill",
+        "wa_status": "connected",
+        "wa_number": "62811111111",
+    }
+
+    send_telegram_daily_report("token123", "chat123", outlet, MockReportDb(), "2026-11-09", 18)
+
+    assert len(posted) == 1
+    assert posted[0]["chat_id"] == "chat123"
+    assert "Sunset Grill" in posted[0]["text"]
+    assert "Laporan Harian WhatsApp Blast" in posted[0]["text"]
+    assert "2026-11-09" in posted[0]["text"]
+    assert "18:00" in posted[0]["text"]
+    assert posted[0]["parse_mode"] == "HTML"
+
 
 

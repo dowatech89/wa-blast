@@ -27,8 +27,25 @@ def now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def compose_caption(message: str, name: str | None, footer: str, outlet: str = "") -> str:
-    text = message.replace("{nama}", (name or "").strip() or "Kak").replace("{outlet}", outlet.strip())
+def get_greeting(hour: int | None = None) -> str:
+    if hour is None:
+        hour = datetime.now().hour
+    if 5 <= hour < 11:
+        return "Selamat pagi"
+    if 11 <= hour < 15:
+        return "Selamat siang"
+    if 15 <= hour < 18:
+        return "Selamat sore"
+    return "Selamat malam"
+
+
+def compose_caption(message: str, name: str | None, footer: str, outlet: str = "", hour: int | None = None) -> str:
+    greeting = get_greeting(hour)
+    text = (
+        message.replace("{nama}", (name or "").strip() or "Kak")
+        .replace("{outlet}", outlet.strip())
+        .replace("{salam}", greeting)
+    )
     return f"{text}\n\n{footer.strip()}" if footer.strip() else text
 
 

@@ -39,3 +39,4 @@ class Settings(BaseSettings):
     signed_url_seconds: int = Field(gt=0)
     telegram_bot_token: str | None = None
     telegram_chat_id: str | None = None
+    telegram_report_hour: int = 18

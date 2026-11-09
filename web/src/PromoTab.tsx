@@ -179,11 +179,40 @@ function PromoForm({
         </label>
         <label>
           Pesan
+          <div style={{ display: "flex", gap: "6px", margin: "6px 0", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="secondary"
+              style={{ padding: "3px 10px", fontSize: "0.8rem", borderRadius: "14px" }}
+              onClick={() => setMessage((m) => (m ? `${m} {salam}` : "{salam}"))}
+              title="Sisipkan ucapan salam waktu otomatis (Selamat Pagi/Siang/Sore/Malam)"
+            >
+              + {"{salam}"}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              style={{ padding: "3px 10px", fontSize: "0.8rem", borderRadius: "14px" }}
+              onClick={() => setMessage((m) => (m ? `${m} {nama}` : "{nama}"))}
+              title="Sisipkan nama pelanggan"
+            >
+              + {"{nama}"}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              style={{ padding: "3px 10px", fontSize: "0.8rem", borderRadius: "14px" }}
+              onClick={() => setMessage((m) => (m ? `${m} {outlet}` : "{outlet}"))}
+              title="Sisipkan nama outlet"
+            >
+              + {"{outlet}"}
+            </button>
+          </div>
           <textarea required rows={5} maxLength={1000} value={message} onChange={(e) => setMessage(e.target.value)} />
         </label>
         <p className="hint">
-          Tulis <code>{"{nama}"}</code> untuk nama pelanggan dan <code>{"{outlet}"}</code> untuk nama outlet. Contoh:
-          Halo {"{nama}"}, ini dari {"{outlet}"}, ada promo hari ini.
+          Tulis <code>{"{salam}"}</code> untuk salam otomatis (Selamat Pagi/Siang/Sore), <code>{"{nama}"}</code> untuk nama pelanggan, dan <code>{"{outlet}"}</code> untuk nama outlet. Contoh:
+          {"{salam}"} {"{nama}"}, ada promo spesial dari {"{outlet}"} hari ini!
         </p>
         {error && (
           <p className="error" role="alert">
