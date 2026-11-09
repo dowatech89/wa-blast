@@ -104,6 +104,7 @@ class Agent:
                     except Exception as exc:
                         log.warning("on_disconnect handler error: %s", exc)
             self._show_qr()
+            self._check_test_send(offline=True)
             return "waiting_qr"
         self.was_connected = True
         self._update_outlet(wa_status="connected", qr_image_path=None, **self._wa_number())
@@ -112,7 +113,7 @@ class Agent:
             return "test_sent"
         return self._send_one()
 
-    def _check_test_send(self) -> bool:
+    def _check_test_send(self, offline: bool = False) -> bool:
         """Check if dashboard requested an instant single-recipient test send."""
         test_path = f"{self.outlet_id}/test_request.json"
         try:
@@ -132,40 +133,45 @@ class Agent:
         if not phone:
             return False
 
-        log.info("Processing test send %s to +%s", test_id, phone)
-        status = "sent"
-        error_msg = None
-
-        try:
-            image_url = None
-            if image_path:
-                signed = self.db.storage.from_(IMAGE_BUCKET).create_signed_url(
-                    image_path, self.signed_url_seconds
-                )
-                image_url = signed.get("signedURL")
-
-            caption = compose_caption(
-                message, contact_name, self.outlet.get("optout_footer") or "", self.outlet["name"]
-            )
-
-            try:
-                self.gowa.set_chat_presence(phone, "start")
-                time.sleep(secrets.SystemRandom().uniform(1.0, 2.0))
-            except Exception as exc:
-                log.debug("test send set_chat_presence start: %s", exc)
-
-            self.gowa.send(phone, caption, image_url)
-
-            try:
-                self.gowa.set_chat_presence(phone, "stop")
-            except Exception as exc:
-                log.debug("test send set_chat_presence stop: %s", exc)
-
-            log.info("Test send %s sent successfully to +%s", test_id, phone)
-        except Exception as exc:
+        if offline:
             status = "failed"
-            error_msg = str(exc)[:500]
-            log.warning("Test send %s failed to +%s: %s", test_id, phone, error_msg)
+            error_msg = "WhatsApp di PC outlet belum tersambung. Silakan scan QR di menu WhatsApp terlebih dahulu."
+            log.warning("Test send %s rejected: WhatsApp not logged in", test_id)
+        else:
+            log.info("Processing test send %s to +%s", test_id, phone)
+            status = "sent"
+            error_msg = None
+
+            try:
+                image_url = None
+                if image_path:
+                    signed = self.db.storage.from_(IMAGE_BUCKET).create_signed_url(
+                        image_path, self.signed_url_seconds
+                    )
+                    image_url = signed.get("signedURL")
+
+                caption = compose_caption(
+                    message, contact_name, self.outlet.get("optout_footer") or "", self.outlet["name"]
+                )
+
+                try:
+                    self.gowa.set_chat_presence(phone, "start")
+                    time.sleep(secrets.SystemRandom().uniform(1.0, 2.0))
+                except Exception as exc:
+                    log.debug("test send set_chat_presence start: %s", exc)
+
+                self.gowa.send(phone, caption, image_url)
+
+                try:
+                    self.gowa.set_chat_presence(phone, "stop")
+                except Exception as exc:
+                    log.debug("test send set_chat_presence stop: %s", exc)
+
+                log.info("Test send %s sent successfully to +%s", test_id, phone)
+            except Exception as exc:
+                status = "failed"
+                error_msg = str(exc)[:500]
+                log.warning("Test send %s failed to +%s: %s", test_id, phone, error_msg)
 
         result_payload = {
             "id": test_id,
@@ -251,7 +257,10 @@ class Agent:
 
     def _show_qr(self) -> None:
         if time.monotonic() < self.qr_valid_until:
-            self._update_outlet()  # heartbeat only, QR on the dashboard is still valid
+            if self.outlet.get("wa_status") != "waiting_qr":
+                self._update_outlet(wa_status="waiting_qr")
+            else:
+                self._update_outlet()  # heartbeat only, QR on the dashboard is still valid
             return
         png, seconds = self.gowa.login_qr()
         path = f"{self.outlet_id}/qr.png"

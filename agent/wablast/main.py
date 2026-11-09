@@ -204,7 +204,7 @@ def send_telegram_daily_report(
 
         opt_res = (
             db.table("opt_outs")
-            .select("id", count="exact")
+            .select("phone", count="exact")
             .eq("outlet_id", outlet_id)
             .gte("created_at", start_of_day)
             .execute()

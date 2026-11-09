@@ -473,5 +473,61 @@ def test_agent_processes_test_send_request():
     assert "o1/test_request.json" in removed
 
 
+def test_agent_processes_test_send_offline():
+    from wablast.worker import Agent
+
+    uploaded: dict[str, bytes] = {}
+    removed: list[str] = []
+    outlet = {"id": "o1", "name": "Sunset Grill", "wa_status": "disconnected"}
+
+    test_payload = {
+        "id": "test_offline",
+        "phone": "628123456789",
+        "name": "Budi",
+        "message": "Halo {nama}",
+    }
+
+    class MockStorage:
+        def download(self, path):
+            if path == "o1/test_request.json":
+                return json.dumps(test_payload).encode("utf-8")
+            return None
+
+        def upload(self, path, data, opts=None):
+            uploaded[path] = data
+
+        def remove(self, paths):
+            removed.extend(paths)
+
+    class MockDb:
+        def table(self, name):
+            c = _Chain()
+            c.data = outlet if name == "outlets" else []
+            return c
+
+        def rpc(self, *a, **k):
+            return _Chain()
+
+        @property
+        def storage(self):
+            class _S:
+                def from_(self, b):
+                    return MockStorage()
+
+            return _S()
+
+    fake_gowa = type("G", (), {"status": lambda _self: {"is_logged_in": False}})()
+    agent = Agent(MockDb(), fake_gowa, outlet, 60)
+    res = agent._check_test_send(offline=True)
+
+    assert res is True
+    assert "o1/test_result.json" in uploaded
+    res_data = json.loads(uploaded["o1/test_result.json"].decode("utf-8"))
+    assert res_data["status"] == "failed"
+    assert "belum tersambung" in res_data["error"]
+    assert "o1/test_request.json" in removed
+
+
+
 
 
