@@ -91,9 +91,14 @@ class Gowa:
 
 def start_gowa(exe: Path, workdir: Path, port: int, webhook_port: int) -> tuple[subprocess.Popen, tuple[str, str], str]:
     """Launch GOWA bound to localhost with fresh random credentials. Returns (process, basic_auth, webhook_secret)."""
+    import os
+
     auth = ("wablast", secrets.token_urlsafe(24))
     webhook_secret = secrets.token_urlsafe(24)
     workdir.mkdir(parents=True, exist_ok=True)
+    env = os.environ.copy()
+    extra_dirs = [str(workdir), str(exe.parent)]
+    env["PATH"] = ";".join(extra_dirs) + ";" + env.get("PATH", "")
     proc = subprocess.Popen(  # noqa: S603 - fixed binary, no shell
         [
             str(exe),
@@ -111,6 +116,7 @@ def start_gowa(exe: Path, workdir: Path, port: int, webhook_port: int) -> tuple[
             "--os=WABlast",
         ],
         cwd=workdir,
+        env=env,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),

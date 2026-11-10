@@ -33,3 +33,4 @@ supabase/.branches/
 # Private working rules and their reports
 .agents/
 artifacts/
+tools/ffmpeg/
