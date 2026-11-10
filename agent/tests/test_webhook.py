@@ -245,6 +245,20 @@ def test_gowa_send_media_routing(monkeypatch):
     assert calls[-1][1] == "/send/video"
     assert calls[-1][2]["files"]["video_url"][1] == "https://example.com/video.mp4?token=abc"
 
+    # 3b. Video with ffmpeg missing falls back to /send/file
+    from wablast.gowa import GowaError
+    def mock_call_ffmpeg_err(self, method: str, path: str, **kwargs):
+        if path == "/send/video":
+            raise GowaError("ffmpeg not installed")
+        calls.append((method, path, kwargs))
+        return {"message_id": "MSG_FALLBACK"}
+
+    monkeypatch.setattr(Gowa, "_call", mock_call_ffmpeg_err)
+    fallback_res = gowa.send("628111", "Video caption", "https://example.com/video.mp4")
+    assert fallback_res == "MSG_FALLBACK"
+    assert calls[-1][1] == "/send/file"
+    monkeypatch.setattr(Gowa, "_call", mock_call)
+
     # 4. PDF Document (pdf)
     gowa.send("628111", "Menu PDF", "https://example.com/menu.pdf?token=abc")
     assert calls[-1][1] == "/send/file"

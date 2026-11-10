@@ -71,7 +71,15 @@ class Gowa:
         clean_path = media_url.split("?")[0].lower()
         if clean_path.endswith((".mp4", ".mov", ".webm", ".avi", ".mkv", ".3gp")):
             fields = {"phone": (None, jid), "caption": (None, caption), "video_url": (None, media_url)}
-            res = self._call("POST", "/send/video", files=fields)
+            try:
+                res = self._call("POST", "/send/video", files=fields)
+            except GowaError as exc:
+                if "ffmpeg" in str(exc).lower():
+                    # Fallback to sending as file/document so video is delivered even without ffmpeg installed
+                    fields = {"phone": (None, jid), "caption": (None, caption), "file_url": (None, media_url)}
+                    res = self._call("POST", "/send/file", files=fields)
+                else:
+                    raise
         elif clean_path.endswith((".pdf", ".doc", ".docx", ".xls", ".xlsx", ".zip", ".csv")):
             fields = {"phone": (None, jid), "caption": (None, caption), "file_url": (None, media_url)}
             res = self._call("POST", "/send/file", files=fields)
