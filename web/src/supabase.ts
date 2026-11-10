@@ -63,7 +63,8 @@ export type Progress = {
 /** set_campaign_status raises PT409 (PostgREST maps it to HTTP 409) when the version is stale. */
 export const isConflict = (error: { code?: string } | null) => error?.code === "PT409";
 
-// WABlast.exe writes last_seen_at every few seconds; silence longer than this means the PC is off.
-const PC_OFFLINE_AFTER_MS = 30_000;
-export const isPcOnline = (outlet: Outlet) =>
-  outlet.last_seen_at !== null && Date.now() - new Date(outlet.last_seen_at).getTime() < PC_OFFLINE_AFTER_MS;
+// WABlast.exe writes last_seen_at regularly; silence longer than 75s means the PC is off.
+// Tolerates 15-30s media uploads, temporary network jitter, and PC/device clock differences.
+export const PC_OFFLINE_AFTER_MS = 75_000;
+export const isPcOnline = (outlet: Outlet, now = Date.now()) =>
+  outlet.last_seen_at !== null && now - new Date(outlet.last_seen_at).getTime() < PC_OFFLINE_AFTER_MS;

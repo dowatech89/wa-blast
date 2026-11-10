@@ -19,7 +19,7 @@ from supabase_auth.errors import AuthError
 from . import session, webhook
 from .config import Settings, app_dir, data_dir
 from .gowa import Gowa, GowaError, start_gowa
-from .worker import Agent
+from .worker import Agent, now_iso
 
 log = logging.getLogger("wablast")
 
@@ -245,6 +245,26 @@ def send_telegram_daily_report(
             log.warning("Gagal mengirim daily report telegram ke %s: %s", cid, exc)
 
 
+def start_heartbeat_thread(db: Any, outlet_id: str, stop: threading.Event, interval_sec: int = 10) -> threading.Thread:
+    """Send periodic heartbeat to Supabase independently of the sending tick loop.
+
+    Synchronous ticks can pause for 15-30s during video uploads, presence delays,
+    or transient HTTP retries. A dedicated heartbeat guarantees the web dashboard
+    never falsely flags the PC as offline ('PC outlet mati') while WABlast is running.
+    """
+    def _run() -> None:
+        log.info("Heartbeat thread started (interval=%ds)", interval_sec)
+        while not stop.wait(interval_sec):
+            try:
+                db.table("outlets").update({"last_seen_at": now_iso()}).eq("id", outlet_id).execute()
+            except Exception as exc:
+                log.debug("Heartbeat ping failed: %s", exc)
+
+    thread = threading.Thread(target=_run, daemon=True, name="HeartbeatThread")
+    thread.start()
+    return thread
+
+
 def main() -> None:
     if not getattr(sys, "frozen", False) and {"--autostart", "--no-autostart"} & set(sys.argv):
         raise SystemExit("--autostart only applies to the built WABlast.exe")
@@ -375,6 +395,7 @@ def main() -> None:
                 last_reported_date = daily_report_file.read_text(encoding="utf-8").strip()
 
         stop = threading.Event()
+        start_heartbeat_thread(db, outlet["id"], stop, interval_sec=10)
         # ponytail: fixed-interval poll of the DB queue; switch to Supabase Realtime if ticks get costly.
         while not stop.wait(settings.tick_seconds):
             try:
@@ -404,6 +425,8 @@ def main() -> None:
                 # Network blip or GOWA hiccup: logged with traceback, retried next tick. Queue state is in the DB.
                 log.exception("tick failed")
     finally:
+        with contextlib.suppress(Exception):
+            stop.set()
         proc.terminate()
 
 

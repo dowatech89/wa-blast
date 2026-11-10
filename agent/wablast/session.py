@@ -239,17 +239,26 @@ def keep_fresh(client: Client) -> None:
     if current is None or current.expires_at is None:
         raise AuthSessionMissingError()
     if current.expires_at - time.time() < REFRESH_BEFORE_SECONDS:
-        client.auth.refresh_session()
+        try:
+            client.auth.refresh_session()
+        except AuthApiError as exc:
+            import logging
+            logging.getLogger(__name__).warning("Session refresh failed (will retry next tick): %s", exc)
 
 
 def connect(url: str, anon_key: str, session_file: Path, credentials=ask_credentials) -> Client:
     options = ClientOptions(storage=FileStorage(session_file), auto_refresh_token=False)  # keep_fresh() does it
     client = create_client(url, anon_key, options=options)
     try:
-        if client.auth.get_session() is not None:
+        sess = client.auth.get_session()
+        if sess is not None:
+            # Verify the session is genuinely valid and accepted by Supabase
+            client.auth.get_user()
             return client
-    except AuthApiError:
-        pass  # saved login was revoked or is too old to refresh: ask again below
+    except Exception:
+        # Saved login was revoked, expired, or invalid: clean stale session and re-prompt below
+        if session_file.exists():
+            session_file.unlink(missing_ok=True)
     error = None
     last_username = None
     while True:

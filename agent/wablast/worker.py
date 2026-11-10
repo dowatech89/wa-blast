@@ -107,7 +107,13 @@ class Agent:
             self._check_test_send(offline=True)
             return "waiting_qr"
         self.was_connected = True
-        self._update_outlet(wa_status="connected", qr_image_path=None, **self._wa_number())
+        wa_num_updates = self._wa_number()
+        if (
+            self.outlet.get("wa_status") != "connected"
+            or self.outlet.get("qr_image_path") is not None
+            or wa_num_updates
+        ):
+            self._update_outlet(wa_status="connected", qr_image_path=None, **wa_num_updates)
         self._sync_sender_name()
         if self._check_test_send():
             return "test_sent"
@@ -259,8 +265,6 @@ class Agent:
         if time.monotonic() < self.qr_valid_until:
             if self.outlet.get("wa_status") != "waiting_qr":
                 self._update_outlet(wa_status="waiting_qr")
-            else:
-                self._update_outlet()  # heartbeat only, QR on the dashboard is still valid
             return
         png, seconds = self.gowa.login_qr()
         path = f"{self.outlet_id}/qr.png"
