@@ -204,7 +204,7 @@ function NewAccount({ kind, onCreated }: { kind: "outlet" | "supervisor"; onCrea
       {kind === "outlet" && (
         <p className="hint">
           Batas awal: 50 pesan per hari, jam 10.00-18.00 (bisa diubah di menu Pengaturan outlet itu). Jeda antar pesan
-          otomatis 30-90 detik.
+          disebar otomatis secara cerdas sepanjang jam operasional.
         </p>
       )}
       <Feedback message={message} />

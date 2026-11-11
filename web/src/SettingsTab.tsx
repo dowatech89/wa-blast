@@ -90,7 +90,9 @@ export function SettingsTab({ outlet, onSaved }: { outlet: Outlet; onSaved: () =
           Maksimal pesan per hari
           <input {...num("daily_limit")} />
         </label>
-        <p className="hint">Jeda antar pesan diatur otomatis: acak 30 sampai 90 detik, berbeda untuk setiap pesan.</p>
+        <p className="hint">
+          Jeda antar pesan disebar otomatis secara cerdas (Smart Pacing) merata sepanjang jam kirim {form.send_start} s/d {form.send_end} untuk melindungi nomor dari deteksi spam WhatsApp.
+        </p>
         <div className="row">
           <label>
             Mulai kirim jam

@@ -40,6 +40,14 @@ def get_greeting(hour: int | None = None) -> str:
     return "Selamat malam"
 
 
+def typing_duration_for(caption: str | None) -> float:
+    """Simulate realistic typing presence based on message length (2.5s - 6.5s)."""
+    text_len = len(caption or "")
+    duration = min(6.5, max(2.5, 2.0 + (text_len / 75.0)))
+    jitter = secrets.SystemRandom().uniform(-0.4, 0.4)
+    return max(2.0, min(7.0, duration + jitter))
+
+
 def compose_caption(message: str, name: str | None, footer: str, outlet: str = "", hour: int | None = None) -> str:
     greeting = get_greeting(hour)
     text = (
@@ -162,7 +170,7 @@ class Agent:
 
                 try:
                     self.gowa.set_chat_presence(phone, "start")
-                    time.sleep(secrets.SystemRandom().uniform(1.0, 2.0))
+                    time.sleep(typing_duration_for(caption))
                 except Exception as exc:
                     log.debug("test send set_chat_presence start: %s", exc)
 
@@ -299,7 +307,7 @@ class Agent:
                 # Simulasi sedang mengetik (Anti-Ban)
                 try:
                     self.gowa.set_chat_presence(m["phone"], "start")
-                    time.sleep(secrets.SystemRandom().uniform(1.5, 3.0))
+                    time.sleep(typing_duration_for(caption))
                 except Exception as exc:
                     log.debug("gagal set_chat_presence start: %s", exc)
 

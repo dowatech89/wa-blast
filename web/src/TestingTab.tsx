@@ -338,9 +338,17 @@ export function TestingTab({ outlet }: { outlet: Outlet }) {
         setHistoryResults([...results]);
       }
 
-      // Jeda 1.5 detik antar nomor untuk kelancaran pengiriman
+      // Jeda aman anti-spam WhatsApp antar nomor uji coba (12 detik dengan hitung mundur)
       if (i < targetContacts.length - 1) {
-        await new Promise((r) => setTimeout(r, 1500));
+        for (let cd = 12; cd > 0; cd--) {
+          setSendProgress({
+            current: i + 1,
+            total: targetContacts.length,
+            name: `Jeda aman WhatsApp (${cd} dtk)`,
+            phone: target.phone,
+          });
+          await new Promise((r) => setTimeout(r, 1000));
+        }
       }
     }
 

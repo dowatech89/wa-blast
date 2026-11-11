@@ -24,6 +24,7 @@ export type Outlet = {
   send_end: string;
   timezone: string;
   last_seen_at: string | null;
+  next_send_at?: string | null;
   version: number;
   // Block-risk controls (see migration 20261027010000_risk_controls.sql)
   check_number_first: boolean;

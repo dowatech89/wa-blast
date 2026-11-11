@@ -437,10 +437,18 @@ function PromoCard({
         <p className="warn">WhatsApp belum tersambung. Buka menu WhatsApp dan scan kode QR.</p>
       )}
       {running && (
-        <p className="hint">
-          Pesan dikirim pelan-pelan dengan jeda acak 30 sampai 90 detik, jam {outlet.send_start.slice(0, 5)} sampai{" "}
-          {outlet.send_end.slice(0, 5)}, maksimal {todayLimit ?? outlet.daily_limit} pesan hari ini.
-        </p>
+        <div className="hint stack-xs" style={{ background: "rgba(18, 140, 126, 0.08)", padding: "10px 14px", borderRadius: "8px" }}>
+          <p>
+            ⚡ <b>Penyebaran Jadwal Cerdas (Smart Pacing):</b> Pesan disebar merata sepanjang jam {outlet.send_start.slice(0, 5)} s/d{" "}
+            {outlet.send_end.slice(0, 5)} agar ritme kirim alami dan melindungi nomor dari risiko blokir spam (maksimal {todayLimit ?? outlet.daily_limit} pesan hari ini).
+          </p>
+          {outlet.next_send_at && new Date(outlet.next_send_at).getTime() > Date.now() && (
+            <p style={{ color: "var(--brand-ink)", fontWeight: 600, marginTop: "4px" }}>
+              🕒 Jadwal pesan berikutnya: sekitar pukul{" "}
+              {new Date(outlet.next_send_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
+            </p>
+          )}
+        </div>
       )}
       {error && (
         <p className="error" role="alert">
