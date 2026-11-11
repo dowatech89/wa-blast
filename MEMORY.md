@@ -18,6 +18,7 @@
 - Built: agent/ (WABlast.exe via build.bat), web/ (Vite+React, Vercel wa-blast-dowa1).
 - Telegram alerts; typing presence; promo photo/video/PDF with {salam}; Contacts filter 'Sudah Di-chat' & Excel export; Testing tab for 1-number campaign trial.
 - Smart Pacing (claim_next_message): spreads messages evenly across operational hours (10-18); dynamic typing presence; safe batch test countdown; sender name via GOWA /user/pushname.
+- Inbound replies tracked: record_inbound_message to inbound_messages table + contacts.last_replied_at; Inbox tab in dashboard with wa.me quick-reply.
 - Push: gh active account may be monauli; switch to dowatech89 to push, then back.
 
 ## Tool quirks
