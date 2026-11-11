@@ -52,6 +52,15 @@ export type Campaign = {
   created_at: string;
 };
 
+export type InboundMessage = {
+  id: string;
+  outlet_id: string;
+  phone: string;
+  sender_name: string | null;
+  message: string;
+  received_at: string;
+};
+
 export type Progress = {
   campaign_id: string;
   total: number;

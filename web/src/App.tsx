@@ -5,6 +5,7 @@ import { AllOutlets } from "./AllOutlets";
 import { ConnectTab } from "./ConnectTab";
 import { ContactsTab } from "./ContactsTab";
 import { Icon, type IconName, Logo } from "./icons";
+import { InboxTab } from "./InboxTab";
 import { LOGIN_OUTLETS, toEmail } from "./login";
 import { Overview } from "./Overview";
 import { PromoTab } from "./PromoTab";
@@ -168,6 +169,7 @@ function Login() {
 const TABS = [
   { id: "promo", label: "Promo" },
   { id: "kontak", label: "Kontak" },
+  { id: "inbox", label: "Kotak Masuk" },
   { id: "wa", label: "WhatsApp" },
   { id: "atur", label: "Pengaturan" },
   { id: "testing", label: "Testing" },
@@ -296,6 +298,7 @@ function Dashboard() {
       <main key={outlet.id}>
         {shown === "promo" && <PromoTab outlet={outlet} />}
         {shown === "kontak" && <ContactsTab outlet={outlet} isSupervisor={isSupervisor === true} />}
+        {shown === "inbox" && <InboxTab outlet={outlet} />}
         {shown === "wa" && <ConnectTab outlet={outlet} />}
         {shown === "atur" && (
           <div className="stack-lg">

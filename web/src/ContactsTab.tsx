@@ -15,12 +15,14 @@ type Row = {
   name: string | null;
   opted_out: boolean;
   not_on_whatsapp: boolean;
+  last_replied_at?: string | null;
+  last_reply_text?: string | null;
   messages?: MessageRecord[];
 };
-type ContactFilter = "all" | "chatted" | "not_chatted" | "stopped";
+type ContactFilter = "all" | "chatted" | "replied" | "not_chatted" | "stopped";
 
 export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSupervisor: boolean }) {
-  const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number; chatted: number } | null>(null);
+  const [counts, setCounts] = useState<{ total: number; stopped: number; noWa: number; chatted: number; replied: number } | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ContactFilter>("all");
@@ -34,8 +36,8 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
       .from("contacts")
       .select(
         isChatted
-          ? "id, phone, name, opted_out, not_on_whatsapp, messages!inner(id, status, sent_at)"
-          : "id, phone, name, opted_out, not_on_whatsapp, messages(id, status, sent_at)"
+          ? "id, phone, name, opted_out, not_on_whatsapp, last_replied_at, last_reply_text, messages!inner(id, status, sent_at)"
+          : "id, phone, name, opted_out, not_on_whatsapp, last_replied_at, last_reply_text, messages(id, status, sent_at)"
       )
       .eq("outlet_id", outlet.id)
       .order("created_at")
@@ -43,6 +45,8 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
 
     if (isChatted) {
       list = list.eq("messages.status", "sent");
+    } else if (filter === "replied") {
+      list = list.not("last_replied_at", "is", null);
     } else if (filter === "stopped") {
       list = list.eq("opted_out", true);
     }
@@ -54,7 +58,7 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
       list = list.or(digits ? `name.ilike.%${name}%,phone.ilike.%${digits}%` : `name.ilike.%${name}%`);
     }
 
-    const [all, stopped, noWa, chatted, page] = await Promise.all([
+    const [all, stopped, noWa, chatted, replied, page] = await Promise.all([
       db.from("contacts").select("id", { count: "exact", head: true }).eq("outlet_id", outlet.id),
       db.from("contacts").select("id", { count: "exact", head: true }).eq("outlet_id", outlet.id).eq("opted_out", true),
       db
@@ -67,6 +71,11 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
         .select("id, messages!inner(status)", { count: "exact", head: true })
         .eq("outlet_id", outlet.id)
         .eq("messages.status", "sent"),
+      db
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
+        .eq("outlet_id", outlet.id)
+        .not("last_replied_at", "is", null),
       list,
     ]);
 
@@ -80,6 +89,7 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
       stopped: stopped.count ?? 0,
       noWa: noWa.count ?? 0,
       chatted: chatted.count ?? 0,
+      replied: replied.count ?? 0,
     });
     setRows(page.data as Row[]);
   }, [search, outlet.id, filter, limitCount]);
@@ -190,6 +200,14 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
           </button>
           <button
             type="button"
+            className={filter === "replied" ? "primary" : "secondary"}
+            style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
+            onClick={() => setFilter("replied")}
+          >
+            💬 Sudah Membalas ({counts?.replied ?? (rows || []).filter((r) => r.last_replied_at).length})
+          </button>
+          <button
+            type="button"
             className={filter === "not_chatted" ? "primary" : "secondary"}
             style={{ minHeight: "36px", padding: "4px 12px", fontSize: "0.85rem" }}
             onClick={() => setFilter("not_chatted")}
@@ -250,6 +268,7 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
             .filter((r) => {
               const isChatted = r.messages && r.messages.some((m) => m.status === "sent");
               if (filter === "chatted") return isChatted;
+              if (filter === "replied") return !!r.last_replied_at;
               if (filter === "not_chatted") return !isChatted && !r.opted_out && !r.not_on_whatsapp;
               if (filter === "stopped") return r.opted_out;
               return true;
@@ -264,6 +283,20 @@ export function ContactsTab({ outlet, isSupervisor }: { outlet: Outlet; isSuperv
                     {r.name || "Tanpa nama"} <span className="muted">{r.phone}</span>
                     {r.opted_out && <span className="badge done">Minta berhenti</span>}
                     {r.not_on_whatsapp && <span className="badge done">Tidak punya WhatsApp</span>}
+                    {r.last_replied_at && (
+                      <span
+                        className="badge ok"
+                        style={{
+                          background: "rgba(18, 140, 126, 0.15)",
+                          color: "var(--brand-ink)",
+                          fontWeight: 600,
+                          borderColor: "transparent",
+                        }}
+                        title={r.last_reply_text ? `Isi: ${r.last_reply_text}` : undefined}
+                      >
+                        💬 Membalas{r.last_reply_text ? `: "${r.last_reply_text.slice(0, 24)}${r.last_reply_text.length > 24 ? "..." : ""}"` : ""}
+                      </span>
+                    )}
                     {(() => {
                       const sentMsg = r.messages
                         ?.filter((m) => m.status === "sent")

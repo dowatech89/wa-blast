@@ -356,6 +356,20 @@ def main() -> None:
             log.warning("%s message(s) interrupted by the last shutdown were marked failed", stuck)
 
         def on_incoming_chat(phone: str, name: str, body: str) -> None:
+            try:
+                db.rpc(
+                    "record_inbound_message",
+                    {
+                        "p_outlet_id": outlet["id"],
+                        "p_phone": phone,
+                        "p_sender_name": name,
+                        "p_message": body,
+                    },
+                ).execute()
+                log.info("Pesan masuk dari +%s berhasil dicatat ke database", phone)
+            except Exception as exc:
+                log.warning("Gagal mencatat pesan masuk ke database: %s", exc)
+
             if settings.telegram_bot_token and settings.telegram_chat_id:
                 threading.Thread(
                     target=send_telegram_chat_notification,
