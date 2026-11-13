@@ -4,38 +4,27 @@ Rencana lengkap: [docs/plans/implementation_plan.md](docs/plans/implementation_p
 Susunan: dashboard web (Vite, file statis) + `WABlast.exe` (Python + GOWA) di PC tiap outlet + Supabase. Gratis, tanpa VPS.
 Aturan: kerjakan phase berurutan. Kotak ⏳ = menunggu data/aksi dari pemilik, dikerjakan begitu tersedia.
 
-## Sisa pekerjaan (urut, per 2026-11-03)
+## Sisa pekerjaan (urut, per 2026-11-13)
 Pemilik = kamu, Claude = dikerjakan di sini.
 
-**A. Cek dashboard baru (pemilik, di Vercel)**
-1. [ ] Login pakai dropdown outlet; dowa/supervisor lewat "Lainnya"
-2. [ ] Promo: ketik pesan + pilih foto, lihat pratinjau chat berbingkai HP; Simpan muncul notifikasi "Tersimpan"
-3. [ ] Promo draf: **Ubah promo**; promo selesai: **Pakai lagi (salin & ubah)**
-4. [ ] Kontak: **Izinkan kirim lagi** untuk Faras (login supervisor)
-5. [ ] WhatsApp: status + titik hijau/merah di menu; kotak **Nama pengirim**
+**A. Kesiapan Sistem & WhatsApp**
+1. [x] Smart Pacing di Supabase (`claim_next_message`, sebar merata jam 10-18) aktif 100%
+2. [x] Tab Kotak Masuk (Inbox) & tracking balasan kontak aktif 100% di web dan database
+3. [ ] Pemilik: sambungkan kembali nomor WhatsApp outlet (scan QR di menu WhatsApp)
 
-**B. Nama pengirim di WhatsApp**
-6. [ ] Pemilik: jalankan `agent\dist\WABlast.exe` (build 2026-11-03), cek nama profil nomor Sunset jadi "Sunset Grill"; Claude cek `sender_name_applied` di database
-7. [ ] Pemilik, di HP outlet: pasang logo sebagai foto profil, lalu Privasi, Foto profil, Semua orang
+**B. Pilot 1 Outlet (Sunset Grill / Dowa)**
+4. [ ] Jalankan `agent\dist\WABlast.exe` (build 2026-11-11) di PC outlet Windows 64-bit, login, autostart Yes
+5. [ ] Upload Excel kontak asli, kirim promo batch kecil (30-50 kontak), pantau penyebaran Smart Pacing (~20-30 mnt/pesan)
+6. [ ] Pantau respons balasan di tab **Kotak Masuk** dan filter **Sudah Membalas** di tab Kontak selama 2-3 hari
+7. [ ] Naikkan batas harian bertahap jika pengiriman stabil dan aman
 
-**C. Pilot Sunset Grill**
-8. [ ] Pasang `WABlast.exe` di PC Sunset (cek 64-bit), login `sunset`, pilih Yes untuk nyala otomatis, scan QR, restart PC, pastikan tetap tersambung
-9. [ ] Upload Excel kontak asli, kirim 30-50 kontak, pantau 2-3 hari (blokir, STOP, gagal)
-10. [ ] Naikkan batas harian bertahap kalau aman; catat hasil di `MEMORY.md`
+**C. Rollout Outlet Lain** (D'Spa `dspa`, D'Bistro `dbistro`, Dragon Beach Club `dbc`, Rooms `rooms`, D'Bar `dbar`)
+8. [ ] Pasang `WABlast.exe` di masing-masing PC outlet (Windows 10/11 64-bit), login akun outlet, scan QR
+9. [ ] Bagikan panduan captain (`docs/guides/panduan-captain.md`) dan link dashboard ke masing-masing captain outlet
 
-**D. Rollout 6 akun lain** (D'Spa `dspa`, D'Bistro `dbistro`, Dragon Beach Club `dbc`, Rooms `rooms`, D'Bar `dbar`, Dowa `dowa`)
-11. [ ] Cek tiap PC Windows 10 64-bit, pasang exe, login akun outlet, Yes nyala otomatis, scan QR
-12. [ ] Bagikan ke tiap captain: link dashboard, kata sandi, `docs/guides/panduan-captain.md`
-13. [ ] Outlet baru dari menu Admin: Claude tambahkan barisnya di `web/src/login.ts` supaya muncul di dropdown login
-
-**E. Teknis (Claude, perlu login Supabase sekali: `npx supabase@2.120.0 login`)**
-14. [ ] Deploy ulang fungsi `admin` (default jam kirim 10:00-18:00 untuk outlet baru)
-
-**F. Opsional / terbuka**
-15. [ ] Pemilik: pastikan kontak promo sudah setuju menerima (opt-in); kirim contoh Excel asli
-16. [x] `trivy` v0.76.1 terpasang (checksum + attestation cocok); scan 2026-11-03: certifi CRITICAL diperbaiki ke 2026.10.18, sisanya 0
-17. [ ] Logo per outlet (sekarang logo WA Blast)
-18. [ ] Tombol pesan WhatsApp (eksperimen GOWA, hanya Android): uji ke HP tim dulu kalau mau
+**D. Teknis & Opsional**
+10. [ ] Deploy ulang fungsi Edge `admin` Supabase jika ingin default jam kirim 10:00-18:00 via CLI (`npx supabase login`)
+11. [ ] Logo per outlet (opsional, saat ini menggunakan logo default WA Blast)
 
 ## Phase 0 — Diskusi & Riset
 - [x] Kumpulkan kebutuhan (6 outlet, 1 nomor captain per outlet, foto + teks, kontak dari Excel, tombol nyalakan)
@@ -150,6 +139,16 @@ Pemilik = kamu, Claude = dikerjakan di sini.
 - [x] Template pesan: variabel salam waktu otomatis `{salam}` (Selamat pagi/siang/sore/malam) dan tombol cepat sisipkan `{salam}`, `{nama}`, `{outlet}`
 - [x] Modul baru "Testing" di bawah Pengaturan: uji kirim promo ke 1 nomor WhatsApp tersimpan (HP pribadi/tester) dengan pratinjau chat langsung dan eksekusi instan di PC outlet via storage trigger
 - [x] Unit test (Python 17/17 lolos, Frontend 28/28 lolos), Ruff linter lolos, exe dibuild ulang via `agent/build.bat`
+
+## Phase 4f — Smart Pacing, Safe Testing & Inbound Inbox (2026-11-11)
+- [x] Smart Pacing (`claim_next_message`): sebar pesan merata sepanjang sisa jam operasional (10:00-18:00) dengan jitter +/- 15%, mencegah tembakan burst 30-90 detik yang memicu blokir spam
+- [x] Simulasi mengetik dinamis proporsional terhadap panjang teks (2.5 s/d 6.5 detik) di `agent/wablast/worker.py`
+- [x] Tab Testing: jeda aman 12 detik antar nomor tester dengan hitung mundur visual langsung di tombol
+- [x] Tab Promo: indikator jadwal pengiriman pesan berikutnya (`next_send_at`) ditampilkan transparan di kartu promo berjalan
+- [x] Perekaman pesan balasan masuk ke tabel `inbound_messages` dan kolom `last_replied_at` di tabel `contacts`
+- [x] Tab baru **Kotak Masuk** (Inbox) di dashboard web: pantau balasan chat pelanggan real-time dan tombol balas satu klik `wa.me/`
+- [x] Tab Kontak: filter **💬 Sudah Membalas** dan badge balasan pada kontak yang merespons
+- [x] Unit test (Python 18/18 lolos, Frontend 32/32 lolos), build web sukses, exe dibuild ulang via `agent/build.bat` (~80 MB)
 
 ## Phase 5 — Pilot 1 Outlet
 - [ ] ⏳ Install exe di PC outlet pilot
